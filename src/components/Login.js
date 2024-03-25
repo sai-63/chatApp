@@ -11,23 +11,39 @@ function Login() {
   let [err, setErr] = useState("");
   const navigate = useNavigate();
   let [show, setShow] = useState(false);
+  let [username,setUsername]=useState("")
+  let [password,setPassword]=useState("")
 
-  function submitLogin(obj) {
-    axios
-      .post("https://chtvthme.onrender.com/user-api/login", obj)
-      .then((res) => {
-        if (res.data.success === true) {
-          localStorage.setItem("token", res.data.token);
-          localStorage.setItem("user", res.data.user);
-          setErr("");
-          socket.emit("new-connection", res.data.user);
-          navigate("/chat");
-        } else {
-          setErr(res.data.message);
+  function submitLogin(e) {
+    console.log('Form submitted:', { username, password });
+    const url = 'http://localhost:5290/Login';
+    const data = {
+      Id:'',
+      Username:username,
+      Password:password,
+      Email:''
+    };
+    axios.post(url,data)
+    .then((response)=>{
+        const dt=response.data;
+        console.log(response);
+        console.log(dt);
+        if(dt.username===username && dt.password===password){
+            alert("Login Successful");
+            localStorage.setItem("username",username);
+            localStorage.setItem("userId",dt.id);
+            navigate("/chat");
+        }else{
+            alert('Invalid Credentials');
         }
-      })
-      .catch((error) => setErr(error.message));
+    })
+    .catch((error)=>{
+        console.log(error);
+    })
+    setUsername('');
+    setPassword('');
   }
+ 
 
   return (
     <div
@@ -47,17 +63,19 @@ function Login() {
           {err.length !== 0 && <p className="lead text-danger">*{err}</p>}
           <div className="d-flex flex-column">
             <input
+              value={username} onChange={(e)=>setUsername(e.target.value)} required
               type="text"
               placeholder="Enter UserId"
               className="rounded mt-3 fs-5 ps-2"
-              {...register("userid", { required: true })}
+              //{...register("userid", { required: true })}
             />
             <div className="d-flex p-0">
               <input
+                value={password} onChange={(e)=>setPassword(e.target.value)} required
                 type={show ? "text" : "password"}
                 placeholder="Enter Password"
                 className="rounded mt-3 fs-5 ps-2"
-                {...register("password", { required: true })}
+                //{...register("password", { required: true })}
               />
               <NavLink
                 onClick={() => setShow(!show)}
