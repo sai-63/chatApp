@@ -1,0 +1,35 @@
+{
+  "message": "Users List",
+  "users": [
+    {
+      "_id": "648c60d6331c0f7830498107",
+      "username": "Nithish Kumar",
+      "userid": "nithish654",
+      "email": "nithishkumar.s654@gmail.com",
+      "mobile": "7416947874",
+      "password": "$2a$09$InzG0Trfc.wQr.YYdj2m0.cNOolgmPe/4Tjt2OoFNT42X1GeNt5Cy",
+      "picture": {},
+      "id": "96a8"
+    },
+    {
+      "_id": "648c6189331c0f7830498108",
+      "username": "Sreya",
+      "userid": "sreya@883",
+      "email": "mulasreya28@gmail.com",
+      "mobile": "9100269360",
+      "password": "$2a$09$k.drCPrzwCrjq1yMzs7A9.9NiwW8c9iNBOPxh6JMJNb3kROLPEXpK",
+      "picture": {},
+      "id": "1d6c"
+    },
+    {
+      "id": "3708",
+      "username": "k",
+      "userid": "1234",
+      "email": "123@gmail.com",
+      "mobile": "",
+      "password": "123456",
+      "repeatPassword": "123456",
+      "picture": {}
+    }
+  ]
+}

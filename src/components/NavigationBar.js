@@ -1,11 +1,15 @@
+import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { Button, NavLink, useNavigate } from "react-router-dom";
-import { HubConnectionBuilder } from "@microsoft/signalr";
+import { Button, Container, Nav, Navbar } from "react-bootstrap";
+import { NavLink, useNavigate } from "react-router-dom";
+import EditProfile from "./EditProfile";
+import socket from "./socket";
 
 function NavigationBar() {
-  const [host, setHost] = useState("");
-  const navigate = useNavigate();
-  let hubConnection = null;
+  let [host, setHost] = useState("");
+  let [showModal, setShowModal] = useState(false);
+
+  let navigate = useNavigate();
 
   const activeLink = {
     color: "orange",
@@ -14,46 +18,32 @@ function NavigationBar() {
   const inactiveLink = {
     color: "white",
   };
-
+  function handleLogout() {
+    let host = localStorage.getItem("user");
+    socket.emit("remove-user", host);
+    localStorage.clear();
+    navigate("/login");
+  }
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const user = localStorage.getItem("user");
-    setHost(user);
 
-    if (user) {
-      hubConnection = new HubConnectionBuilder()
-        .withUrl("https://your-signalr-hub-url")
-        .build();
-
-      hubConnection.start().then(() => {
-        hubConnection.invoke("AddUserToGroup", user);
-      }).catch(err => console.error(err));
-    }
-
-    return () => {
-      if (hubConnection) {
-        hubConnection.stop();
-      }
-    };
-  }, []);
-
-  function handleLogout() {
-    const user = localStorage.getItem("user");
-    if (hubConnection) {
-      hubConnection.invoke("RemoveUserFromGroup", user).then(() => {
-        hubConnection.stop();
-        localStorage.clear();
-        navigate("/login");
-      }).catch(err => console.error(err));
-    } else {
-      localStorage.clear();
-      navigate("/login");
-    }
-  }
-
+    axios
+      .post("https://chtvthme.onrender.com/user-api/pathjump", { token: token })
+      .then((res) => {
+        if (res.data.success !== true) {
+          localStorage.clear();
+          setHost("");
+          navigate("/");
+        } else {
+          const user = localStorage.getItem("user");
+          setHost(user);
+        }
+      })
+      .catch((err) => alert("Error: " + err.message));
+  }, [localStorage.getItem("user")]);
   return (
-    <div className="h-auto p-0 w-100">
-      <nav className="h-auto m-0 rounded-top navbar navbar-expand-lg navbar-primary bg-primary">
+    /*<div className="h-auto p-0 w-100">
+      <nav className="h-auto m-0  navbar navbar-expand-lg navbar-primary bg-primary">
         <NavLink className="nav-link m-1 navbar-brand" to="/">
           <img
             alt=""
@@ -66,7 +56,7 @@ function NavigationBar() {
           </p>
         </NavLink>
         <button
-          className="navbar-toggler"
+          class="navbar-toggler"
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#navbarSupportedContent"
@@ -74,11 +64,11 @@ function NavigationBar() {
           aria-expanded="false"
           aria-label="Toggle navigation"
         >
-          <span className="navbar-toggler-icon"></span>
+          <span class="navbar-toggler-icon"></span>
         </button>
-        <div className="collapse navbar-collapse" id="navbarSupportedContent">
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <ul className="ms-auto navbar-nav align-items-center me-2">
-            {!host && (
+            {host.length === 0 && (
               <li className="nav-item">
                 <NavLink
                   className="nav-link"
@@ -91,7 +81,7 @@ function NavigationBar() {
                 </NavLink>
               </li>
             )}
-            {!host && (
+            {host.length === 0 && (
               <li className="nav-item">
                 <NavLink
                   className="nav-link"
@@ -104,7 +94,7 @@ function NavigationBar() {
                 </NavLink>
               </li>
             )}
-            {!host && (
+            {host.length === 0 && (
               <li className="nav-item">
                 <NavLink
                   className="nav-link"
@@ -117,7 +107,7 @@ function NavigationBar() {
                 </NavLink>
               </li>
             )}
-            {host && (
+            {host.length !== 0 && (
               <Button
                 className="text-white btn btn-danger"
                 onClick={handleLogout}
@@ -128,7 +118,76 @@ function NavigationBar() {
           </ul>
         </div>
       </nav>
+    </div>*/
+    <div className="w-100">
+  <nav className="navbar navbar-expand-lg navbar-dark bg-success">
+    <NavLink className="navbar-brand" to="/">
+      
+      <span className="fs-4">Chat App</span>
+    </NavLink>
+    <button
+      className="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarSupportedContent"
+      aria-controls="navbarSupportedContent"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span className="navbar-toggler-icon"></span>
+    </button>
+    <div className="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul className="ms-auto navbar-nav">
+        {host.length === 0 && (
+          <>
+            <li className="nav-item">
+              <NavLink
+                className="nav-link"
+                to="/"
+                activeClassName="active"
+              >
+                Home
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink
+                className="nav-link"
+                to="/login"
+                activeClassName="active"
+              >
+                Login
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink
+                className="nav-link"
+                to="/register"
+                activeClassName="active"
+              >
+                Register
+                {"  "}
+              </NavLink>
+            </li>
+          </>
+        )}
+        
+        {host.length !== 0 && (
+          
+          <li className="nav-item">
+            <button
+              className="btn btn-danger"
+              onClick={handleLogout}
+            >
+              Logout
+              {"   "}
+            </button>
+          </li>
+        )}
+      </ul>
     </div>
+  </nav>
+</div>
+
   );
 }
 

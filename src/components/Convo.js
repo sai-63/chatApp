@@ -1,3 +1,4 @@
+import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
 import { Button, Modal, Spinner } from "react-bootstrap";
 import {
@@ -13,13 +14,12 @@ import {
 import { BsChevronDoubleDown } from "react-icons/bs";
 import { IoMdDownload } from "react-icons/io";
 import { RiArrowDropDownLine } from "react-icons/ri";
-import * as signalR from "@microsoft/signalr";
-import axios from "axios"; // Import Axios
+import socket from "./socket";
 
 function Convo({ person, setShow, setMessage, search }) {
-  const [messages, setMessages] = useState([]);
-  const [host, setHost] = useState("");
-  const [isLoaded, setIsLoaded] = useState(true);
+  let [messages, setMessages] = useState();
+  let [host, setHost] = useState("");
+  let [isLoaded, setIsLoaded] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [deleteObject, setDeleteObject] = useState({});
   const [state, setState] = useState(true);
@@ -64,6 +64,17 @@ function Convo({ person, setShow, setMessage, search }) {
       .catch((err) => console.log(err.message));
   }, [person, search, state]);
 
+  socket.on("message-sent", (data) => {
+    if (data.senderId === host || data.receiverId === host) {
+      setState(!state);
+    }
+  });
+  socket.on("delete-message", (data) => {
+    if (data.senderId === host || data.receiverId === host) {
+      setState(!state);
+    }
+  });
+
   useEffect(() => {
     setIsLoaded(true);
   }, [person]);
@@ -72,36 +83,13 @@ function Convo({ person, setShow, setMessage, search }) {
     scrollDown();
   }, [scroll]);
 
-  useEffect(() => {
-    const connection = new signalR.HubConnectionBuilder()
-      .withUrl("your_signalR_hub_url")
-      .configureLogging(signalR.LogLevel.Information)
-      .build();
-
-    connection.start().then(() => {
-      console.log("SignalR Connected");
-    }).catch((err) => console.error(err.toString()));
-
-    connection.on("ReceiveMessage", (message) => {
-      // Handle received message
-      console.log("Received Message:", message);
-      // Assuming message contains the new message object, update state accordingly
-      setMessages([...messages, message]);
-    });
-
-    connection.on("DeleteMessage", (messageId) => {
-      // Handle deleted message
-      console.log("Deleted Message ID:", messageId);
-      // Remove the deleted message from the state
-      setMessages(messages.filter(msg => msg.id !== messageId));
-    });
-
-    return () => {
-      connection.stop().then(() => {
-        console.log("SignalR Connection Stopped");
-      }).catch((err) => console.error(err.toString()));
-    };
-  }, [host, state]);
+  if (isLoaded) {
+    return (
+      <div className="bg-white d-flex" style={{ height: "82%" }}>
+        <Spinner className="m-auto" animation="border" variant="primary" />
+      </div>
+    );
+  }
 
   const handleDownload = async (obj) => {
     try {
@@ -141,7 +129,10 @@ function Convo({ person, setShow, setMessage, search }) {
       )
       .then((res) => {
         setMessage(res.data.message);
-        // No need for socket here as it's replaced with SignalR
+        const socketObj = {};
+        socketObj.senderId = host;
+        socketObj.receiverId = person.userid;
+        socket.emit("delete-message", socketObj);
       })
       .catch((err) => {
         setMessage(err.message);
@@ -149,19 +140,11 @@ function Convo({ person, setShow, setMessage, search }) {
       });
   }
 
-  if (isLoaded) {
-    return (
-      <div className="bg-white d-flex" style={{ height: "82%" }}>
-        <Spinner className="m-auto" animation="border" variant="primary" />
-      </div>
-    );
-  }
-
   return (
     <div style={{ height: "82%", position: "relative" }}>
       <div
         ref={scrollRef}
-        className="d-flex flex-column overflow-auto pb-2 bg-white h-100"
+        className="d-flex flex-column overflow-auto pb-2 bg-light h-100"
       >
         {messages.length !== 0 ? (
           <div className="mt-auto">
@@ -170,17 +153,284 @@ function Convo({ person, setShow, setMessage, search }) {
                 <div
                   className="ms-auto pe-3 mb-1 d-flex"
                   style={{ width: "60%", wordBreak: "break-word" }}
-                  key={obj.id}
                 >
-                  {/* Render sender messages */}
+                  <div
+                    className="d-inline-block ms-auto fs-6 lead m-0 bg-success pt-1 pb-1 rounded text-white"
+                    style={{ position: "relative" }}
+                  >
+                    {obj.message ? (
+                      <div
+                        className="d-flex flex-wrap ms-2 me-2 mt-1"
+                        style={{ position: "relative" }}
+                      >
+                        <p
+                          className="m-0 me-2"
+                          style={{ position: "relative" }}
+                        >
+                          {obj.message}
+                        </p>
+                        <p
+                          className="m-0 mt-auto ms-auto p-0 d-inline"
+                          style={{ fontSize: "10px" }}
+                        >
+                          {obj.time}
+                        </p>
+                      </div>
+                    ) : (
+                      <div
+                        className="d-flex me-1 ms-1 mt-1"
+                        style={{ position: "relative" }}
+                      >
+                        <div
+                          className="d-flex flex-wrap justify-content-between"
+                          style={{ position: "relative" }}
+                        >
+                          <div style={{ position: "relative" }}>
+                            {obj.fileType === "application/pdf" ? (
+                              <AiFillFilePdf
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            ) : obj.fileType.includes("image") ? (
+                              <AiFillFileImage
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            ) : obj.fileType.includes("application/vnd") ? (
+                              <AiFillFileExcel
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            ) : obj.fileType.includes("zip") ? (
+                              <AiFillFileZip
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            ) : obj.fileType.includes("text/plain") ? (
+                              <AiFillFileText
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            ) : obj.fileType.includes(
+                                "application/powerpoint"
+                              ) ? (
+                              <AiFillFilePpt
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            ) : obj.fileType.includes("application/msword") ? (
+                              <AiFillFileWord
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            ) : (
+                              <AiFillFileUnknown
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            )}
+                            <IoMdDownload
+                              onClick={() => handleDownload(obj)}
+                              className="fs-3 text-dark"
+                              style={{
+                                position: "absolute",
+                                bottom: "1rem",
+                                left: "0",
+                                borderRadius: "50%",
+                                cursor: "pointer",
+                              }}
+                            />
+                          </div>
+                          <div className="ms-1">{obj.fileName}</div>
+                        </div>
+                        <div
+                          className=" mt-auto ms-auto"
+                          style={{
+                            width: "40px",
+                            position: "relative",
+                            fontSize: "10px",
+                          }}
+                        >
+                          {obj.time}
+                        </div>
+                      </div>
+                    )}
+                    <div
+                      className="dropstart"
+                      style={{ position: "absolute", top: "0", right: "0" }}
+                    >
+                      <RiArrowDropDownLine
+                        className=" dropdown-toggle fs-4"
+                        style={{ cursor: "pointer" }}
+                        data-bs-toggle="dropdown"
+                      />
+                      <ul className="dropdown-menu p-0 text-center">
+                        <li
+                          className="text-center btn d-block"
+                          onClick={() => handleModal(obj)}
+                        >
+                          <p className="dropdown-item m-0">Delete</p>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div
                   className="ps-2 mb-1"
                   style={{ width: "60%", wordBreak: "break-word" }}
-                  key={obj.id}
                 >
-                  {/* Render receiver messages */}
+                  <div
+                    className="lead m-0 fs-6 d-inline-block text-white bg-secondary p-3 pt-1 pb-1 rounded"
+                    style={{ position: "relative" }}
+                  >
+                    {obj.message ? (
+                      <div
+                        className="d-flex flex-wrap ms-2 me-2 d-inline"
+                        style={{ position: "relative" }}
+                      >
+                        <p
+                          className="m-0 me-2"
+                          style={{ position: "relative" }}
+                        >
+                          {obj.message}
+                        </p>
+                        <p
+                          className="m-0 mt-auto p-0 d-inline"
+                          style={{ fontSize: "10px" }}
+                        >
+                          {obj.time}
+                        </p>
+                      </div>
+                    ) : (
+                      <div
+                        className="d-flex ms-1 me-1"
+                        style={{ position: "relative" }}
+                      >
+                        <div
+                          className="d-flex flex-wrap justify-content-between"
+                          style={{ position: "relative" }}
+                        >
+                          <div style={{ position: "relative" }}>
+                            {obj.fileType === "application/pdf" ? (
+                              <AiFillFilePdf
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            ) : obj.fileType.includes("image") ? (
+                              <AiFillFileImage
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            ) : obj.fileType.includes("application/vnd") ? (
+                              <AiFillFileExcel
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            ) : obj.fileType.includes("zip") ? (
+                              <AiFillFileZip
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            ) : obj.fileType.includes("text/plain") ? (
+                              <AiFillFileText
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            ) : obj.fileType.includes(
+                                "application/powerpoint"
+                              ) ? (
+                              <AiFillFilePpt
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            ) : obj.fileType.includes("application/msword") ? (
+                              <AiFillFileWord
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            ) : (
+                              <AiFillFileUnknown
+                                style={{
+                                  position: "relative",
+                                  width: "50px",
+                                  height: "50px",
+                                }}
+                              />
+                            )}
+                            <IoMdDownload
+                              onClick={() => handleDownload(obj)}
+                              className="fs-3 text-dark"
+                              style={{
+                                position: "absolute",
+                                bottom: "1rem",
+                                left: "0",
+                                borderRadius: "50%",
+                                cursor: "pointer",
+                              }}
+                            />
+                          </div>
+                          <p className="ms-1">{obj.fileName}</p>
+                        </div>
+                        <div
+                          className="mt-auto d-inline"
+                          style={{
+                            position: "relative",
+                            fontSize: "10px",
+                            width: "50px",
+                          }}
+                        >
+                          {" "}
+                          {obj.time}{" "}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )
             )}

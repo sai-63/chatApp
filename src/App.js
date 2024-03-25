@@ -1,13 +1,45 @@
-import logo from './logo.svg';
-import './App.css';
-import React from 'react';
-import RouterPage from "./components/RouterPage";
-import 'bootstrap/dist/css/bootstrap.min.css';
-
+import React from "react";
+import RootLayout from "./components/RootLayout";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import Login from "./components/Login";
+import Home from "./components/Home";
+import Register from "./components/Register";
+import Chat from "./components/Chat";
+import ForgotPass from "./components/ForgotPass";
 
 function App() {
+  const router = createBrowserRouter([
+    {
+      path: "/",
+      element: <RootLayout />,
+      children: [
+        {
+          path: "/",
+          element: <Home />,
+        },
+        {
+          path: "/register",
+          element: <Register />,
+        },
+        {
+          path: "/login",
+          element: <Login />,
+        },
+        {
+          path: "/chat",
+          element: <Chat />,
+        },
+        {
+          path: "/forgotPass",
+          element: <ForgotPass />,
+        },
+      ],
+    },
+  ]);
   return (
-    <RouterPage/>
+    <div className="">
+      <RouterProvider router={router} />
+    </div>
   );
 }
 

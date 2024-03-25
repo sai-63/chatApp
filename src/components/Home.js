@@ -1,39 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import UserTile from './UserTile'; // Import the UserTile component
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-const Home = () => {
-  const [username, setUsername] = useState('');
-  const [userId, setUserId] = useState('');
-  const [otherUsers, setOtherUsers] = useState([]);
-
+function Home() {
+  const navigate = useNavigate();
   useEffect(() => {
-    setUsername(localStorage.getItem('username'));
-    setUserId(localStorage.getItem('userId'));
-
-    axios.get('http://localhost:5290/GetOtherUsers', { params: { id: userId } })
-      .then(response => {
-        console.log(response.data);
-        setOtherUsers(response.data);
-      })
-      .catch(error => {
-        console.error('Error fetching other users:', error);
-      });
-  }, [userId]); // Include userId in the dependency array
+    const user = localStorage.getItem("user");
+    if (user) navigate("/chat");
+  }, []);
 
   return (
-    <div>
-      <h2>Welcome to My App, {username}</h2>
-      <div>
-        <h3>Other Users:</h3>
-        <div className="user-tiles">
-          {otherUsers.map(user => (
-            <UserTile key={user.id} user={user} />
-          ))}
-        </div>
-      </div>
+    <div className="border w-100 d-flex" style={{ maxHeight: "100%" }}>
+      <img
+        className="m-auto w-100"
+        style={{ maxHeight: "100%" }}
+        src="https://f4n3x6c5.stackpathcdn.com/article/what-is-mern-stack/Images/The%20MERN%20Stack.jpg"
+      />
     </div>
   );
-};
+}
 
 export default Home;

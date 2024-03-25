@@ -29,7 +29,7 @@ function EditProfile({ show, setShow }) {
     let host = localStorage.getItem("user");
 
     axios
-      .get("https://chtvthme.onrender.com/user-api/get-users")
+      .get("http://localhost:4000/users")
       .then(async (res) => {
         let user = await res.data.users.filter((obj) => obj.userid === host);
         user = user[0];
