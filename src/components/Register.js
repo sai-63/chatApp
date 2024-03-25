@@ -6,27 +6,46 @@ import { BiHide, BiShow } from "react-icons/bi";
 import { NavLink, useNavigate } from "react-router-dom";
 
 function Register() {
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   let {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
+
   let [err, setErr] = useState("");
   const navigate = useNavigate();
   let [show, setShow] = useState(false);
   let [repeatShow, setRepeatShow] = useState(false);
 
-  function submitRegister(obj) {
-    axios
-      .post("http://localhost:4000/users", obj)
-      .then((res) => {
-        if (res.data.success === true) {
+  function submitRegister(e) {
+    const url = 'http://localhost:5290/Signup';
+    const data = {
+      Id:'',
+      Username:username,
+      Password:password,
+      Email:email
+    };
+
+    axios.post(url, data)
+      .then((response) => {
+        if (response.status === 200) {
+          alert('Successfully Registered');
+          // Redirect to login page
           navigate("/login");
         } else {
-          setErr(res.data.message);
+          //alert(response.statusText);
         }
       })
-      .catch((err) => setErr(err.message));
+      .catch((error) => {
+        console.log(error);
+      });
+
+    setEmail('');
+    setUsername('');
+    setPassword('');
   }
 
   return (
@@ -51,7 +70,8 @@ function Register() {
             type="text"
             className="mt-3 rounded fs-5 ps-2"
             placeholder="Enter your Name"
-            {...register("username", { required: true })}
+            value={username} onChange={(e)=>setUsername(e.target.value)} required
+            //{...register("username", { required: true })}
           />
           <label className="ms-5 text-dark">
             *This will be used as your Name in the Chats
@@ -59,40 +79,43 @@ function Register() {
           {errors.username?.type === "required" && (
             <p className="text-danger">*UserName is required</p>
           )}
-          <input
+          {/*<input
             type="text"
             className="mt-3 rounded fs-5 ps-2"
             placeholder="Create a UserID"
-            {...register("userid", { required: true })}
+            //{...register("userid", { required: true })}
           />
           <label className="ms-5 text-dark">
             *This will be used as your UserID in the Chats
           </label>
           {errors.userid?.type === "required" && (
             <p className="text-danger">*UserID is required</p>
-          )}
+          )}*/}
           <input
             type="email"
             className="mt-3 rounded fs-5 ps-2"
             placeholder="Enter your Email"
-            {...register("email", { required: true })}
+            value={email} onChange={(e)=>setEmail(e.target.value)} required
+            //{...register("email", { required: true })}
           />
           {errors.email?.type === "required" && (
             <p className="text-danger">*Email is required</p>
           )}
-          <input
+          {/*<input
             type="number"
             className="mt-3 rounded fs-5 ps-2"
             placeholder="Enter Mobile Number"
-            {...register("mobile")}
-          />
+           // {...register("mobile")}
+          />*/}
           <div className="d-flex p-0">
             <input
               type={show ? "text" : "password"}
               className="mt-3 rounded fs-5 ps-2"
               placeholder="Enter Password"
-              {...register("password", { required: true })}
+              value={password} onChange={(e)=>setPassword(e.target.value)} required
+              //{...register("password", { required: true })}
             />
+            
             <NavLink
               onClick={() => setShow(!show)}
               className="mt-3 ms-2 nav-link pt-1"
@@ -107,6 +130,7 @@ function Register() {
           {errors.password?.type === "required" && (
             <p className="text-danger">*Password is required</p>
           )}
+          {/*
           <div className="d-flex p-0">
             <input
               type={repeatShow ? "text" : "password"}
@@ -131,7 +155,7 @@ function Register() {
           <label className="mt-3 text-dark lead fs-5">
             Upload your profile pic
           </label>
-          <input type="file" {...register("picture")} />
+          <input type="file" {...register("picture")} /> */}
           <Button
             className="btn btn-success text-center m-auto mt-3 mb-1"
             type="submit"
