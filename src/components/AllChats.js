@@ -3,29 +3,33 @@ import React, { useEffect, useState } from "react";
 import { AiFillCloseCircle, AiOutlineSearch } from "react-icons/ai";
 import { CgProfile } from "react-icons/cg";
 import { NavLink } from "react-router-dom";
-import EditProfile from "./EditProfile";
+// import EditProfile from "./EditProfile";
 
 function AllChats({ show, setShow, message, setMessage, showPerson }) {
   let [host, setHost] = useState("");
   let [showModal, setShowModal] = useState(false);
   let [userids, setUserId] = useState([]);
+  let [username,setUsername] = useState('');
+
+  useEffect(()=>{
+    setHost(localStorage.getItem("userId"));
+    setUsername(localStorage.getItem("username"))
+  },[]);
 
   useEffect(() => {
-    setHost(localStorage.getItem("user"));
-
     axios
-      .get("http://localhost:5290/GetOtherUsers")
-      .then((res) => setUserId(res.data.users))
+      .get("http://localhost:5290/GetOtherUsers",{params:{id:host}})
+      .then((res) => setUserId(res.data))
       .catch((err) => console.log(err));
-  }, []);
+  }, [host]);
 
   function handleChange(event) {
     axios
-      .get("http://localhost:5290/GetOtherUsers")
+      .get("http://localhost:5290/GetOtherUsers",{params:{id:host}})
       .then((res) =>
         setUserId(
-          res.data.users.filter((obj) =>
-            obj.userid.toLowerCase().includes(event.target.value.toLowerCase())
+          res.data.filter((obj) =>
+            obj.id.toLowerCase().includes(event.target.value.toLowerCase())
           )
         )
       )
@@ -46,7 +50,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson }) {
         {" "}
         Welcome{" "}
         <i>
-          <b>{host}</b>
+          <b>{username}</b>
         </i>
         ..!!
       </h1>
@@ -72,7 +76,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson }) {
       <div className="" style={{ position: "relative" }}>
         {userids?.map(
           (obj) =>
-            obj.userid !== host && (
+            obj.id !== host && (
               <>
                 <NavLink
                   onClick={() => showChat(obj)}
@@ -99,7 +103,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson }) {
         </div>
       )}
 
-      <EditProfile show={showModal} setShow={setShowModal} />
+      {/* <EditProfile show={showModal} setShow={setShowModal} /> */}
     </div>
   );
 }
