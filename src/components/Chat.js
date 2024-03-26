@@ -12,21 +12,6 @@ function Chat() {
   let [show, setShow] = useState(false);
   let [message, setMessage] = useState("");
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-
-    axios
-      .post("https://chtvthme.onrender.com/user-api/pathjump", { token: token })
-      .then((res) => {
-        if (res.data.success !== true) {
-          alert(res.data.message);
-          localStorage.clear();
-          navigate("/login");
-        }
-      })
-      .catch((err) => alert("Error: " + err.message));
-  }, []);
-
   return (
     <div className="web dark row flex-grow-1 m-0 mt-3" style={{ position: "relative" }}>
       <div
