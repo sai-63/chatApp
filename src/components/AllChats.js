@@ -14,14 +14,14 @@ function AllChats({ show, setShow, message, setMessage, showPerson }) {
     setHost(localStorage.getItem("user"));
 
     axios
-      .get("https://chtvthme.onrender.com/user-api/get-users")
+      .get("http://localhost:5290/GetOtherUsers")
       .then((res) => setUserId(res.data.users))
       .catch((err) => console.log(err));
   }, []);
 
   function handleChange(event) {
     axios
-      .get("https://chtvthme.onrender.com/user-api/get-users")
+      .get("http://localhost:5290/GetOtherUsers")
       .then((res) =>
         setUserId(
           res.data.users.filter((obj) =>
