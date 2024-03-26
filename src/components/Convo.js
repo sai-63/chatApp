@@ -39,23 +39,15 @@ function Convo({ person, setShow, setMessage, search }) {
   }
 
   useEffect(() => {
-    setHost(localStorage.getItem("user"));
+    setHost(localStorage.getItem("userId"));
 
     let hosting = localStorage.getItem("user");
 
     axios
-      .post("https://chtvthme.onrender.com/conversation-api/get-messages", {
-        host: hosting,
-        person: person.userid,
-      })
+      .get("http://localhost:5290/Chat/GetMessagesSenderIdUserId",{params:{senderId:host,recieverId:person.id}})
       .then((response) => {
-        setMessages(
-          response.data.chat.filter(
-            (obj) =>
-              obj.message?.toLowerCase().includes(search.toLowerCase()) ||
-              obj.fileName?.toLowerCase().includes(search.toLowerCase())
-          )
-        );
+        console.log(response.data);
+        setMessages(response.data);
         setShow(false);
         setMessage("");
         setIsLoaded(false);

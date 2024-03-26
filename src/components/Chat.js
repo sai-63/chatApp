@@ -16,7 +16,7 @@ function Chat() {
     <div className="web dark row flex-grow-1 m-0 mt-3" style={{ position: "relative" }}>
       <div
         className={`col col-md-4 ${
-          person.userid ? "d-none" : "d-block"
+          person.id ? "d-none" : "d-block"
         } d-md-block`}
         style={{ maxHeight: "100%" }}
       >
@@ -35,7 +35,7 @@ function Chat() {
         } d-md-block`}
         style={{ maxHeight: "100%" }}
       >
-        {person.userid ? (
+        {person.id ? (
           <Conversation
             setShow={setShow}
             setMessage={setMessage}
