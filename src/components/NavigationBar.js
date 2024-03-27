@@ -19,7 +19,7 @@ function NavigationBar() {
     color: "white",
   };
   function handleLogout() {
-    let host = localStorage.getItem("user");
+    let host = localStorage.getItem("userId");
     socket.emit("remove-user", host);
     localStorage.clear();
     navigate("/login");
@@ -42,83 +42,7 @@ function NavigationBar() {
       .catch((err) => alert("Error: " + err.message));
   }, [localStorage.getItem("user")]);
   return (
-    /*<div className="h-auto p-0 w-100">
-      <nav className="h-auto m-0  navbar navbar-expand-lg navbar-primary bg-primary">
-        <NavLink className="nav-link m-1 navbar-brand" to="/">
-          <img
-            alt=""
-            className="me-2 border"
-            style={{ borderRadius: "50%", width: "3rem" }}
-            src="https://static.vecteezy.com/system/resources/previews/009/116/929/original/cvm-logo-cvm-letter-cvm-letter-logo-design-initials-cvm-logo-linked-with-circle-and-uppercase-monogram-logo-cvm-typography-for-technology-business-and-real-estate-brand-vector.jpg"
-          />
-          <p className="d-inline mt-2 fs-4 " style={{ position: "absolute" }}>
-            Cht Vth Me
-          </p>
-        </NavLink>
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarSupportedContent"
-          aria-controls="navbarSupportedContent"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul className="ms-auto navbar-nav align-items-center me-2">
-            {host.length === 0 && (
-              <li className="nav-item">
-                <NavLink
-                  className="nav-link"
-                  to="/"
-                  style={({ isActive }) => {
-                    return isActive ? activeLink : inactiveLink;
-                  }}
-                >
-                  Home
-                </NavLink>
-              </li>
-            )}
-            {host.length === 0 && (
-              <li className="nav-item">
-                <NavLink
-                  className="nav-link"
-                  to="/login"
-                  style={({ isActive }) => {
-                    return isActive ? activeLink : inactiveLink;
-                  }}
-                >
-                  Login
-                </NavLink>
-              </li>
-            )}
-            {host.length === 0 && (
-              <li className="nav-item">
-                <NavLink
-                  className="nav-link"
-                  to="/register"
-                  style={({ isActive }) => {
-                    return isActive ? activeLink : inactiveLink;
-                  }}
-                >
-                  Register
-                </NavLink>
-              </li>
-            )}
-            {host.length !== 0 && (
-              <Button
-                className="text-white btn btn-danger"
-                onClick={handleLogout}
-              >
-                Logout
-              </Button>
-            )}
-          </ul>
-        </div>
-      </nav>
-    </div>*/
+   
     <div className="w-100">
   <nav className="navbar navbar-expand-lg navbar-dark bg-success">
     <NavLink className="navbar-brand" to="/">
