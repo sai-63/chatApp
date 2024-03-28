@@ -15,15 +15,17 @@ import { BsChevronDoubleDown } from "react-icons/bs";
 import { IoMdDownload } from "react-icons/io";
 import { RiArrowDropDownLine } from "react-icons/ri";
 import socket from "./socket";
+import SignalRService from './SignalRService';
 
 function Convo({ person, setShow, setMessage, search }) {
-  let [messages, setMessages] = useState();
+  let [messages, setMessages] = useState("");
   let [host, setHost] = useState("");
   let [isLoaded, setIsLoaded] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [deleteObject, setDeleteObject] = useState({});
   const [state, setState] = useState(true);
   const [scroll, setScroll] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
 
   function handleClose() {
     setShowModal(false);
@@ -39,33 +41,37 @@ function Convo({ person, setShow, setMessage, search }) {
   }
 
   useEffect(() => {
+
+    SignalRService.startConnection();
     setHost(localStorage.getItem("userId"));
+
+    SignalRService.setReceiveMessageCallback(({ user, message }) => {
+      setChatMessages(prevMessages => [...prevMessages, { senderId: user, message }]);
+    });
 
     let hosting = localStorage.getItem("user");
 
     axios
       .get("http://localhost:5290/Chat/GetMessagesSenderIdUserId",{params:{senderId:host,receiverId:person.id}})
       .then((response) => {
+        console.log(response)
         console.log(response.data);
         setMessages(response.data);
+        console.log( messages)
         setShow(false);
-        setMessage("");
+        //setMessage("");
         setIsLoaded(false);
         setScroll(!scroll);
+        setMessage("");
       })
       .catch((err) => console.log(err.message));
+      
   }, [person, search, state]);
+  
+  
+  
 
-  socket.on("message-sent", (data) => {
-    if (data.senderId === host || data.receiverId === host) {
-      setState(!state);
-    }
-  });
-  socket.on("delete-message", (data) => {
-    if (data.senderId === host || data.receiverId === host) {
-      setState(!state);
-    }
-  });
+
 
   useEffect(() => {
     setIsLoaded(true);
@@ -75,6 +81,8 @@ function Convo({ person, setShow, setMessage, search }) {
     scrollDown();
   }, [scroll]);
 
+  
+
   if (isLoaded) {
     return (
       <div className="bg-white d-flex" style={{ height: "82%" }}>
@@ -83,54 +91,8 @@ function Convo({ person, setShow, setMessage, search }) {
     );
   }
 
-  const handleDownload = async (obj) => {
-    try {
-      let response = await axios.post(
-        "https://chtvthme.onrender.com/conversation-api/download-file",
-        obj,
-        { responseType: "blob" }
-      );
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", obj.fileName);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
 
-      setShow(true);
-      setMessage("File Downloaded Successfully..");
-    } catch (err) {
-      setShow(true);
-      setMessage("Error while downloading the file..");
-    }
-  };
-
-  function handleModal(obj) {
-    setShowModal(true);
-    setDeleteObject(obj);
-  }
-
-  function handleDelete() {
-    handleClose();
-    axios
-      .post(
-        "https://chtvthme.onrender.com/conversation-api/delete-message",
-        deleteObject
-      )
-      .then((res) => {
-        setMessage(res.data.message);
-        const socketObj = {};
-        socketObj.senderId = host;
-        socketObj.receiverId = person.userid;
-        socket.emit("delete-message", socketObj);
-      })
-      .catch((err) => {
-        setMessage(err.message);
-        setDeleteObject({});
-      });
-  }
 
   return (
     <div style={{ height: "82%", position: "relative" }}>
@@ -245,17 +207,7 @@ function Convo({ person, setShow, setMessage, search }) {
                                 }}
                               />
                             )}
-                            <IoMdDownload
-                              onClick={() => handleDownload(obj)}
-                              className="fs-3 text-dark"
-                              style={{
-                                position: "absolute",
-                                bottom: "1rem",
-                                left: "0",
-                                borderRadius: "50%",
-                                cursor: "pointer",
-                              }}
-                            />
+                            
                           </div>
                           <div className="ms-1">{obj.fileName}</div>
                         </div>
@@ -271,24 +223,7 @@ function Convo({ person, setShow, setMessage, search }) {
                         </div>
                       </div>
                     )}
-                    <div
-                      className="dropstart"
-                      style={{ position: "absolute", top: "0", right: "0" }}
-                    >
-                      <RiArrowDropDownLine
-                        className=" dropdown-toggle fs-4"
-                        style={{ cursor: "pointer" }}
-                        data-bs-toggle="dropdown"
-                      />
-                      <ul className="dropdown-menu p-0 text-center">
-                        <li
-                          className="text-center btn d-block"
-                          onClick={() => handleModal(obj)}
-                        >
-                          <p className="dropdown-item m-0">Delete</p>
-                        </li>
-                      </ul>
-                    </div>
+                   
                   </div>
                 </div>
               ) : (
@@ -395,17 +330,7 @@ function Convo({ person, setShow, setMessage, search }) {
                                 }}
                               />
                             )}
-                            <IoMdDownload
-                              onClick={() => handleDownload(obj)}
-                              className="fs-3 text-dark"
-                              style={{
-                                position: "absolute",
-                                bottom: "1rem",
-                                left: "0",
-                                borderRadius: "50%",
-                                cursor: "pointer",
-                              }}
-                            />
+                          
                           </div>
                           <p className="ms-1">{obj.fileName}</p>
                         </div>
@@ -444,25 +369,6 @@ function Convo({ person, setShow, setMessage, search }) {
         }}
       />
 
-      {/* Modal for Delete */}
-
-      <Modal centered size="sm" show={showModal} onHide={handleClose}>
-        <Modal.Body>
-          {`Do you want to Delete this Message..
-        
-          ${
-            deleteObject.message ? deleteObject.message : deleteObject.fileName
-          }`}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="success" onClick={handleDelete}>
-            Yes, Proceed.
-          </Button>
-          <Button variant="danger" onClick={handleClose}>
-            No, Wait..
-          </Button>
-        </Modal.Footer>
-      </Modal>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { BsEmojiSunglasses } from "react-icons/bs";
 import { GiCancel } from "react-icons/gi";
 import { GrAttachment } from "react-icons/gr";
 import socket from "./socket";
+import SignalRService from './SignalRService';
 
 function Footer({ person }) {
   let { handleSubmit } = useForm();
@@ -17,127 +18,73 @@ function Footer({ person }) {
   let [disabled, setDisabled] = useState(false);
   let [file, setFile] = useState(null);
   let [spin, setSpin] = useState(false);
+  const [message, setMessage] = useState('');
+  const [user, setUser] = useState('');
+  const [chatMessages, setChatMessages] = useState([]);
+  useEffect(() => {
+    // Initialize SignalR connection when the component mounts
+    SignalRService.startConnection();
+    setHost(localStorage.getItem("userId"));
+    // Set up callback to handle received messages
+    SignalRService.setReceiveMessageCallback(({ user, message }) => {
+      setChatMessages(prevMessages => [...prevMessages, { senderId: user, message }]);
+    });
+
+    // Fetch chat messages from the database on component mount
+    axios.get('http://localhost:5290/Chat/Get All Messages')
+      .then((res) => {
+        console.log("Chat messages:", res.data);
+        setChatMessages(res.data); // Assuming res.data is an array of chat messages
+      })
+      .catch((error) => {
+        console.error("Error fetching chat messages:", error);
+      });
+  }, []);
 
   function submitMessage() {
     setSpin(true);
-    let obj = {};
     value = value.trimStart();
-
-    obj.message = value;
-    obj.senderId = host;
-    obj.receiverId = person.userid;
-
-    let today = new Date();
-
-    let hrs = today.getHours().toString();
-    if (hrs.length === 1) hrs = "0".concat(hrs);
-
-    let mins = today.getMinutes().toString();
-    if (mins.length === 1) mins = "0".concat(mins);
-
-    let secs = today.getSeconds().toString();
-    if (secs.length === 1) secs = "0".concat(secs);
-
-    obj.time = hrs + ":" + mins + ":" + secs;
-
-    if (value.length !== 0) {
-      axios
-        .post(
-          "https://chtvthme.onrender.com/conversation-api/send-message",
-          obj
-        )
+    const data = {
+      senderId:host,
+      receiverId:person.id,
+      message: value,
+      timestamp: Date.now()
+    }
+    if (value.length!==0) {
+      axios.post('http://localhost:5290/Chat/Send Message', data)
         .then((res) => {
           setValue("");
           setSpin(false);
-          const socketObj = {};
-          socketObj.senderId = host;
-          socketObj.receiverId = person.userid;
-          socket.emit("message-sent", socketObj);
+          alert('Message successfully sent');
+          console.log(res.data);
+          console.log(host)
+          setMessage('');
         })
-        .catch((err) => console.log(err.message));
-    } else {
-      setValue("");
+        .catch((error) => {
+          console.log(error);
+        })
+      SignalRService.sendMessage(host, message); // Send message via SignalR
     }
+    
   }
+  const handleMessageChange = (event) => {
+    setMessage(event.target.value);
+  };
 
+  const handleUserChange = (event) => {
+    setUser(event.target.value);
+  };
   function handleChange(event) {
     setValue(event.target.value);
   }
 
-  function handleEmoji(emoji) {
-    setValue(value + emoji.emoji);
-  }
 
-  function handleFile(event) {
-    console.log(event.target.files[0]);
-    setFile(event.target.files[0]);
-    setValue(event.target.files[0].name);
-    setDisabled(true);
-  }
+  
 
-  function submitFile() {
-    let obj = {};
-    setSpin(true);
 
-    obj.senderId = host;
-    obj.receiverId = person.userid;
+  
 
-    let today = new Date();
-
-    let hrs = today.getHours().toString();
-    if (hrs.length === 1) hrs = "0".concat(hrs);
-
-    let mins = today.getMinutes().toString();
-    if (mins.length === 1) mins = "0".concat(mins);
-
-    let secs = today.getSeconds().toString();
-    if (secs.length === 1) secs = "0".concat(secs);
-
-    obj.time = hrs + ":" + mins + ":" + secs;
-
-    obj.fileName = file.name;
-
-    //obj.bfile = bFile;
-
-    let fd = new FormData();
-
-    fd.append("details", JSON.stringify(obj));
-
-    fd.append("file", file);
-
-    axios
-      .post("https://chtvthme.onrender.com/conversation-api/send-file", fd)
-      .then((res) => {
-        setValue("");
-        setSpin(false);
-        setDisabled(false);
-        const socketObj = {};
-        socketObj.senderId = host;
-        socketObj.receiverId = person.userid;
-        socket.emit("message-sent", socketObj);
-      })
-      .catch((err) => console.log(err.message));
-  }
-
-  function cancelFile() {
-    setValue("");
-    setDisabled(false);
-  }
-
-  useEffect(() => {
-    const socketObj = {};
-    socketObj.senderId = host;
-    socketObj.receiverId = person.userid;
-    if (value.length !== 0) {
-      socket.emit("typing", socketObj);
-    } else {
-      socket.emit("not-typing", socketObj);
-    }
-  }, [value]);
-
-  useEffect(() => {
-    setHost(localStorage.getItem("user"));
-  }, []);
+  
   return (
     <form
       className="footer d-flex align-items-center justify-content-center bg-dark bg-opacity-10"
@@ -145,14 +92,10 @@ function Footer({ person }) {
       onSubmit={handleSubmit(submitMessage)}
     >
       <div className="emojiAndFile mt-1 ms-4 d-flex">
-        <OverlayTrigger
-          trigger={"click"}
-          key={"top"}
-          placement={"top"}
-          rootClose={true}
+        <OverlayTrigger  trigger={"click"}  key={"top"}  placement={"top"}  rootClose={true}
           overlay={
             <Popover>
-              <EmojiPicker onEmojiClick={handleEmoji} />
+              <EmojiPicker  />
             </Popover>
           }
         >
@@ -164,14 +107,11 @@ function Footer({ person }) {
           </div>
         </OverlayTrigger>
 
-        <OverlayTrigger
-          trigger={"click"}
-          key={"top"}
-          placement={"top-start"}
+        <OverlayTrigger trigger={"click"} key={"top"} placement={"top-start"}
           rootClose={true}
           overlay={
             <Popover className="d-block">
-              <input type="file" onInput={handleFile} />
+              <input type="file" />
             </Popover>
           }
         >
@@ -183,6 +123,8 @@ function Footer({ person }) {
           </div>
         </OverlayTrigger>
       </div>
+
+
       <div className="border w-75 ms-3">
         <input
           type="text"
@@ -194,43 +136,18 @@ function Footer({ person }) {
           onChange={handleChange}
         />
       </div>
-      {disabled === false ? (
-        spin ? (
-          <Button className="btn btn-success pt-0 pb-1 mt-2 ms-2" disabled>
-            <Spinner animation="border" variant="dark" size="sm" />
-          </Button>
-        ) : (
+      
           <Button
             className="btn btn-success pt-0 pb-1 mt-2 ms-2"
             onClick={submitMessage}
           >
             <AiOutlineSend className="fs-6" />
           </Button>
-        )
-      ) : (
-        <>
-          {spin ? (
-            <Button className="btn btn-success pt-0 pb-1 mt-2 ms-2" disabled>
-              <Spinner animation="border" variant="dark" size="sm" />
-            </Button>
-          ) : (
-            <>
-              <Button
-                className="btn btn-success pt-0 pb-1 mt-2 ms-2"
-                onClick={submitFile}
-              >
-                <AiOutlineSend className="fs-6" />
-              </Button>
-              <Button
-                className="btn btn-secondary pt-0 pb-1 mt-2 ms-2"
-                onClick={cancelFile}
-              >
-                <GiCancel className="fs-6" />
-              </Button>
-            </>
-          )}
-        </>
-      )}
+        
+            
+        
+        
+  
     </form>
   );
 }
