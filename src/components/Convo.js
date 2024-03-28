@@ -44,7 +44,7 @@ function Convo({ person, setShow, setMessage, search }) {
     let hosting = localStorage.getItem("user");
 
     axios
-      .get("http://localhost:5290/Chat/GetMessagesSenderIdUserId",{params:{senderId:host,recieverId:person.id}})
+      .get("http://localhost:5290/Chat/GetMessagesSenderIdUserId",{params:{senderId:host,receiverId:person.id}})
       .then((response) => {
         console.log(response.data);
         setMessages(response.data);
