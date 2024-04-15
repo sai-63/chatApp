@@ -24,23 +24,23 @@ function NavigationBar() {
     localStorage.clear();
     navigate("/login");
   }
-  useEffect(() => {
-    const token = localStorage.getItem("token");
+  // useEffect(() => {
+  //   const token = localStorage.getItem("token");
 
-    axios
-      .post("https://chtvthme.onrender.com/user-api/pathjump", { token: token })
-      .then((res) => {
-        if (res.data.success !== true) {
-          localStorage.clear();
-          setHost("");
-          navigate("/");
-        } else {
-          const user = localStorage.getItem("user");
-          setHost(user);
-        }
-      })
-      .catch((err) => alert("Error: " + err.message));
-  }, [localStorage.getItem("user")]);
+  //   axios
+  //     .post("https://chtvthme.onrender.com/user-api/pathjump", { token: token })
+  //     .then((res) => {
+  //       if (res.data.success !== true) {
+  //         localStorage.clear();
+  //         setHost("");
+  //         navigate("/");
+  //       } else {
+  //         const user = localStorage.getItem("user");
+  //         setHost(user);
+  //       }
+  //     })
+  //     .catch((err) => alert("Error: " + err.message));
+  // }, [localStorage.getItem("user")]);
   return (
    
     <div className="w-100">
