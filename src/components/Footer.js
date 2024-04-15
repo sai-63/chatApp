@@ -11,7 +11,7 @@ import { GrAttachment } from "react-icons/gr";
 import socket from "./socket";
 import SignalRService from './SignalRService';
 
-function Footer({ person }) {
+function Footer({ person ,prevMessages , setPrevMessages}) {
   let { handleSubmit } = useForm();
   let [host, setHost] = useState("");
   let [value, setValue] = useState("");
@@ -20,26 +20,20 @@ function Footer({ person }) {
   let [spin, setSpin] = useState(false);
   const [message, setMessage] = useState('');
   const [user, setUser] = useState('');
-  const [chatMessages, setChatMessages] = useState([]);
   useEffect(() => {
+
+    console.log("HI");
     // Initialize SignalR connection when the component mounts
     SignalRService.startConnection();
     setHost(localStorage.getItem("userId"));
     // Set up callback to handle received messages
     SignalRService.setReceiveMessageCallback(({ user, message }) => {
-      setChatMessages(prevMessages => [...prevMessages, { senderId: user, message }]);
+      setPrevMessages(prevMessages => [...prevMessages, { senderId: user, message: message , receiverId: person.id}]);
     });
+    console.log("Prev in signalR:",prevMessages);
+    console.log("Bye");
 
-    // Fetch chat messages from the database on component mount
-    axios.get('http://localhost:5290/Chat/Get All Messages')
-      .then((res) => {
-        console.log("Chat messages:", res.data);
-        setChatMessages(res.data); // Assuming res.data is an array of chat messages
-      })
-      .catch((error) => {
-        console.error("Error fetching chat messages:", error);
-      });
-  }, []);
+  },[person,prevMessages]);
 
   function submitMessage() {
     setSpin(true);
@@ -57,7 +51,11 @@ function Footer({ person }) {
           setSpin(false);
           alert('Message successfully sent');
           console.log(res.data);
-          console.log(host)
+          console.log(host);
+          setPrevMessages([...prevMessages, data]);
+          console.log(prevMessages,data);
+          console.log([...prevMessages,data])
+          console.log("Prev in footer",prevMessages);
           setMessage('');
         })
         .catch((error) => {
@@ -67,6 +65,11 @@ function Footer({ person }) {
     }
     
   }
+
+  useEffect(()=>{
+    console.log("Prev messages changed in footer :",prevMessages);
+  },[prevMessages]);
+
   const handleMessageChange = (event) => {
     setMessage(event.target.value);
   };

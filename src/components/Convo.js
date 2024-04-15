@@ -17,15 +17,13 @@ import { RiArrowDropDownLine } from "react-icons/ri";
 import socket from "./socket";
 import SignalRService from './SignalRService';
 
-function Convo({ person, setShow, setMessage, search }) {
-  let [messages, setMessages] = useState("");
+function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessages }) {
   let [host, setHost] = useState("");
   let [isLoaded, setIsLoaded] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [deleteObject, setDeleteObject] = useState({});
   const [state, setState] = useState(true);
   const [scroll, setScroll] = useState(false);
-  const [chatMessages, setChatMessages] = useState([]);
 
   function handleClose() {
     setShowModal(false);
@@ -42,22 +40,16 @@ function Convo({ person, setShow, setMessage, search }) {
 
   useEffect(() => {
 
-    SignalRService.startConnection();
     setHost(localStorage.getItem("userId"));
-
-    SignalRService.setReceiveMessageCallback(({ user, message }) => {
-      setChatMessages(prevMessages => [...prevMessages, { senderId: user, message }]);
-    });
 
     let hosting = localStorage.getItem("user");
 
     axios
       .get("http://localhost:5290/Chat/GetMessagesSenderIdUserId",{params:{senderId:host,receiverId:person.id}})
       .then((response) => {
-        console.log(response)
+        console.log(response) 
         console.log(response.data);
-        setMessages(response.data);
-        console.log( messages)
+        setPrevMessages(response.data);
         setShow(false);
         //setMessage("");
         setIsLoaded(false);
@@ -66,10 +58,13 @@ function Convo({ person, setShow, setMessage, search }) {
       })
       .catch((err) => console.log(err.message));
       
-  }, [person, search, state]);
+  }, [person, search]);
   
   
-  
+  useEffect(()=>{
+    setState(!state);
+    console.log("Prev messages changed in convo:",prevMessages);
+  },[prevMessages])
 
 
 
@@ -100,9 +95,9 @@ function Convo({ person, setShow, setMessage, search }) {
         ref={scrollRef}
         className="d-flex flex-column overflow-auto pb-2 bg-light h-100"
       >
-        {messages.length !== 0 ? (
+        {prevMessages.length !== 0 ? (
           <div className="mt-auto">
-            {messages.map((obj) =>
+            {prevMessages.map((obj) =>
               obj.senderId === host ? (
                 <div
                   className="ms-auto pe-3 mb-1 d-flex"
@@ -139,6 +134,7 @@ function Convo({ person, setShow, setMessage, search }) {
                           className="d-flex flex-wrap justify-content-between"
                           style={{ position: "relative" }}
                         >
+                          {obj.fileType ? (
                           <div style={{ position: "relative" }}>
                             {obj.fileType === "application/pdf" ? (
                               <AiFillFilePdf
@@ -208,7 +204,7 @@ function Convo({ person, setShow, setMessage, search }) {
                               />
                             )}
                             
-                          </div>
+                          </div>): null }
                           <div className="ms-1">{obj.fileName}</div>
                         </div>
                         <div
@@ -262,6 +258,7 @@ function Convo({ person, setShow, setMessage, search }) {
                           className="d-flex flex-wrap justify-content-between"
                           style={{ position: "relative" }}
                         >
+                          {obj.fileType ? (
                           <div style={{ position: "relative" }}>
                             {obj.fileType === "application/pdf" ? (
                               <AiFillFilePdf
@@ -332,6 +329,7 @@ function Convo({ person, setShow, setMessage, search }) {
                             )}
                           
                           </div>
+                          ): null}
                           <p className="ms-1">{obj.fileName}</p>
                         </div>
                         <div
