@@ -56,12 +56,12 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
           console.log(prevMessages,data);
           console.log([...prevMessages,data])
           console.log("Prev in footer",prevMessages);
-          setMessage('');
         })
         .catch((error) => {
           console.log(error);
         })
-      SignalRService.sendMessage(host, message); // Send message via SignalR
+      console.log("Person.id:",person.id);
+      SignalRService.sendMessage(host, value, person.id); // Send message via SignalR
     }
     
   }

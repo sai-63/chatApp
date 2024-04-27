@@ -5,12 +5,16 @@ class SignalRService {
     this.connection = null;
     this.receiveMessageCallback = null;
     this.isConnected = false;
+    this.userId = localStorage.getItem("userId");
   }
 
   startConnection() {
     if (!this.isConnected) {
+      // Include userId as a query parameter in the connection URL
+      const connectionUrl = `http://localhost:5290/notificationHub?userId=${this.userId}`;
+
       this.connection = new signalR.HubConnectionBuilder()
-        .withUrl("http://localhost:5290/notificationHub")
+        .withUrl(connectionUrl)
         .configureLogging(signalR.LogLevel.Information)
         .build();
 
@@ -31,7 +35,7 @@ class SignalRService {
     }
   }
 
-  sendMessage(user, message, receiverId=null) {
+  sendMessage(user, message, receiverId = null) {
     if (this.connection) {
       if (receiverId) {
         this.connection.invoke("SendToUser", user, receiverId, message)
