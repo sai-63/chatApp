@@ -23,10 +23,8 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
   useEffect(() => {
 
     console.log("HI");
-    // Initialize SignalR connection when the component mounts
     SignalRService.startConnection();
     setHost(localStorage.getItem("userId"));
-    // Set up callback to handle received messages
     SignalRService.setReceiveMessageCallback(({ user, message }) => {
       setPrevMessages(prevMessages => [...prevMessages, { senderId: user, message: message , receiverId: person.id}]);
     });
@@ -56,12 +54,12 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
           console.log(prevMessages,data);
           console.log([...prevMessages,data])
           console.log("Prev in footer",prevMessages);
-          setMessage('');
         })
         .catch((error) => {
           console.log(error);
         })
-      SignalRService.sendMessage(host, message); // Send message via SignalR
+      console.log("Person.id:",person.id);
+      SignalRService.sendMessage(host, value, person.id); // Send message via SignalR
     }
     
   }

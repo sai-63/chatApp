@@ -5,21 +5,35 @@ class SignalRService {
     this.connection = null;
     this.receiveMessageCallback = null;
     this.isConnected = false;
+    this.userId = localStorage.getItem("userId");
   }
 
   startConnection() {
     if (!this.isConnected) {
+      // Include userId as a query parameter in the connection URL
+      const connectionUrl = `http://localhost:5290/notificationHub?userId=${this.userId}`;
+
       this.connection = new signalR.HubConnectionBuilder()
-        .withUrl("http://localhost:5290/notificationHub")
+        .withUrl(connectionUrl)
         .configureLogging(signalR.LogLevel.Information)
         .build();
+
+      // Register event handlers for connection lifecycle events
+      this.connection.onclose(() => {
+        console.log("SignalR connection closed. Reconnecting...");
+        this.isConnected = false;
+        setTimeout(() => this.startConnection(), 5000); // Attempt to reconnect after 5 seconds
+      });
 
       this.connection.start()
         .then(() => {
           console.log("SignalR connection established.");
           this.isConnected = true;
         })
-        .catch(err => console.error("Error starting SignalR connection:", err.toString()));
+        .catch(err => {
+          console.error("Error starting SignalR connection:", err.toString());
+          setTimeout(() => this.startConnection(), 5000); // Attempt to reconnect after 5 seconds
+        });
 
       this.connection.on("ReceiveMessage", (user, message) => {
         // Handle received message
@@ -31,7 +45,7 @@ class SignalRService {
     }
   }
 
-  sendMessage(user, message, receiverId=null) {
+  sendMessage(user, message, receiverId = null) {
     if (this.connection) {
       if (receiverId) {
         this.connection.invoke("SendToUser", user, receiverId, message)
