@@ -18,12 +18,22 @@ class SignalRService {
         .configureLogging(signalR.LogLevel.Information)
         .build();
 
+      // Register event handlers for connection lifecycle events
+      this.connection.onclose(() => {
+        console.log("SignalR connection closed. Reconnecting...");
+        this.isConnected = false;
+        setTimeout(() => this.startConnection(), 5000); // Attempt to reconnect after 5 seconds
+      });
+
       this.connection.start()
         .then(() => {
           console.log("SignalR connection established.");
           this.isConnected = true;
         })
-        .catch(err => console.error("Error starting SignalR connection:", err.toString()));
+        .catch(err => {
+          console.error("Error starting SignalR connection:", err.toString());
+          setTimeout(() => this.startConnection(), 5000); // Attempt to reconnect after 5 seconds
+        });
 
       this.connection.on("ReceiveMessage", (user, message) => {
         // Handle received message

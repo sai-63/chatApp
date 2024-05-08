@@ -84,7 +84,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson }) {
                 >
                   <p className="lead ms-2 text-white fs-4 d-inline"> {obj.username} </p>
                   <p className="lead ms-2 text-white fs-6 d-inline ms-auto mt-5 mb-0">
-                    {obj.userid}
+                    {obj.id}
                   </p>
                 </NavLink>
                 <hr className="ms-1 w-75 m-0" />

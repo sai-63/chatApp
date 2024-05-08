@@ -23,10 +23,8 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
   useEffect(() => {
 
     console.log("HI");
-    // Initialize SignalR connection when the component mounts
     SignalRService.startConnection();
     setHost(localStorage.getItem("userId"));
-    // Set up callback to handle received messages
     SignalRService.setReceiveMessageCallback(({ user, message }) => {
       setPrevMessages(prevMessages => [...prevMessages, { senderId: user, message: message , receiverId: person.id}]);
     });
