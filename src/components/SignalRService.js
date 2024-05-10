@@ -5,12 +5,15 @@ class SignalRService {
     this.connection = null;
     this.receiveMessageCallback = null;
     this.isConnected = false;
-    this.userId = localStorage.getItem("userId");
+    this.userId = null;
+    this.receiver = null;
   }
 
   startConnection() {
+    this.userId = localStorage.getItem("userId");
+    this.receiver = localStorage.getItem("reciever");
+    console.log("Out User connected:",this.userId," Reciever is:",this.receiver);
     if (!this.isConnected) {
-      // Include userId as a query parameter in the connection URL
       const connectionUrl = `http://localhost:5290/notificationHub?userId=${this.userId}`;
 
       this.connection = new signalR.HubConnectionBuilder()
@@ -18,11 +21,10 @@ class SignalRService {
         .configureLogging(signalR.LogLevel.Information)
         .build();
 
-      // Register event handlers for connection lifecycle events
       this.connection.onclose(() => {
         console.log("SignalR connection closed. Reconnecting...");
         this.isConnected = false;
-        setTimeout(() => this.startConnection(), 5000); // Attempt to reconnect after 5 seconds
+        setTimeout(() => this.startConnection(), 5000); 
       });
 
       this.connection.start()
@@ -32,15 +34,15 @@ class SignalRService {
         })
         .catch(err => {
           console.error("Error starting SignalR connection:", err.toString());
-          setTimeout(() => this.startConnection(), 5000); // Attempt to reconnect after 5 seconds
+          setTimeout(() => this.startConnection(), 5000); 
         });
 
       this.connection.on("ReceiveMessage", (user, message) => {
-        // Handle received message
-        console.log(`${user}: ${message}`);
+        console.log(`${user}: ${message}`,this.receiver);
+        if(this.receiver === user || this.userId === user){
         if (this.receiveMessageCallback) {
           this.receiveMessageCallback({ user, message });
-        }
+        }}
       });
     }
   }
@@ -48,10 +50,10 @@ class SignalRService {
   sendMessage(user, message, receiverId = null) {
     if (this.connection) {
       if (receiverId) {
-        this.connection.invoke("SendToUser", user, receiverId, message)
+        this.connection.invoke("SendToUser", this.userId, receiverId, message)
           .catch(err => console.error(err.toString()));
       } else {
-        this.connection.invoke("SendMessage", user, message)
+        this.connection.invoke("SendMessage", this.userId, message)
           .catch(err => console.error(err.toString()));
       }
     } else {
