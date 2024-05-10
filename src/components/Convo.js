@@ -63,7 +63,7 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
   
   useEffect(()=>{
     setState(!state);
-    console.log("Prev messages changed in convo:",prevMessages);
+    // console.log("Prev messages changed in convo:",prevMessages);
   },[prevMessages])
 
 

@@ -14,24 +14,32 @@ import SignalRService from './SignalRService';
 function Footer({ person ,prevMessages , setPrevMessages}) {
   let { handleSubmit } = useForm();
   let [host, setHost] = useState("");
+  let [receiver,setReciever] = useState("");
   let [value, setValue] = useState("");
   let [disabled, setDisabled] = useState(false);
   let [file, setFile] = useState(null);
   let [spin, setSpin] = useState(false);
   const [message, setMessage] = useState('');
   const [user, setUser] = useState('');
-  useEffect(() => {
+  
+  useEffect(()=>{
+    localStorage.setItem("reciever",person.id);
+    startConnection();
+  },[person,prevMessages]);
+
+  function startConnection() {
 
     console.log("HI");
     SignalRService.startConnection();
+    console.log("Reached");
     setHost(localStorage.getItem("userId"));
     SignalRService.setReceiveMessageCallback(({ user, message }) => {
       setPrevMessages(prevMessages => [...prevMessages, { senderId: user, message: message , receiverId: person.id}]);
     });
-    console.log("Prev in signalR:",prevMessages);
-    console.log("Bye");
+    // console.log("Prev in signalR:",prevMessages);
+    // console.log("Bye");
 
-  },[person,prevMessages]);
+  }
 
   function submitMessage() {
     setSpin(true);
@@ -51,21 +59,22 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
           console.log(res.data);
           console.log(host);
           setPrevMessages([...prevMessages, data]);
-          console.log(prevMessages,data);
-          console.log([...prevMessages,data])
-          console.log("Prev in footer",prevMessages);
+          // console.log(prevMessages,data);
+          // console.log([...prevMessages,data])
+          // console.log("Prev in footer",prevMessages);
         })
         .catch((error) => {
           console.log(error);
         })
       console.log("Person.id:",person.id);
+      SignalRService.sendMessage(host, value, host);
       SignalRService.sendMessage(host, value, person.id); // Send message via SignalR
     }
     
   }
 
   useEffect(()=>{
-    console.log("Prev messages changed in footer :",prevMessages);
+    // console.log("Prev messages changed in footer :",prevMessages);
   },[prevMessages]);
 
   const handleMessageChange = (event) => {

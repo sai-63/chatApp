@@ -21,7 +21,9 @@ function Login() {
       Id:'',
       Username:username,
       Password:password,
-      Email:''
+      Email:'',
+      Nickname:'',
+      Friends:[]
     };
     axios.post(url,data)
     .then((response)=>{
