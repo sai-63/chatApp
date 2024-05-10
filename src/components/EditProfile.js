@@ -26,10 +26,10 @@ function EditProfile({ show, setShow }) {
   }
 
   useEffect(() => {
-    let host = localStorage.getItem("user");
+    let host = localStorage.getItem("userId");
 
     axios
-      .get("http://localhost:4000/users")
+      .get("http://localhost:5290/users")
       .then(async (res) => {
         let user = await res.data.users.filter((obj) => obj.userid === host);
         user = user[0];
