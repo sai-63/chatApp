@@ -10,10 +10,17 @@ function EditProfile({ show, setShow }) {
   function updateProfile() {
     let updatedProfile = getValues();
 
+    // Check if any of the required fields are empty
+    if (!updatedProfile.username || !updatedProfile.email) {
+      setErr("Please enter the details  😡");
+      return; // Exit the function early if any field is empty
+    }
+
     axios
       .post(
-        "https://chtvthme.onrender.com/user-api/profile-update",
-        updatedProfile
+        "http://localhost:5290/Chat/ProfileUpdate",{userId: updatedProfile.userid,
+        email: updatedProfile.email,
+        username: updatedProfile.username}
       )
       .then((res) => {
         if (res.data.success === true) {
@@ -24,23 +31,29 @@ function EditProfile({ show, setShow }) {
       })
       .catch((err) => setErr(err.message));
   }
-
   useEffect(() => {
-    let host = localStorage.getItem("user");
+    // Reset error message when modal is closed
+    if (!show) {
+      setErr("");
+    }
+  }, [show]);
 
-    axios
-      .get("http://localhost:4000/users")
-      .then(async (res) => {
-        let user = await res.data.users.filter((obj) => obj.userid === host);
-        user = user[0];
+  // useEffect(() => {
+  //   let host = localStorage.getItem("user");
 
-        setValue("username", user.username);
-        setValue("userid", user.userid);
-        setValue("email", user.email);
-        setValue("mobile", user.mobile);
-      })
-      .catch((err) => console.log(err));
-  }, []);
+  //   axios
+  //     .get("http://localhost:4000/users")
+  //     .then(async (res) => {
+  //       let user = await res.data.users.filter((obj) => obj.userid === host);
+  //       user = user[0];
+
+  //       setValue("username", user.username);
+  //       setValue("userid", user.userid);
+  //       setValue("email", user.email);
+  //       // setValue("mobile", user.mobile);
+  //     })
+  //     .catch((err) => console.log(err));
+  // }, []);
 
   return (
     <div>
@@ -48,7 +61,7 @@ function EditProfile({ show, setShow }) {
         show={show}
         size="md"
         aria-labelledby="contained-modal-title-vcenter"
-        centered
+        centered     
       >
         <Modal.Header>
           <Modal.Title id="contained-modal-title-vcenter">
@@ -62,7 +75,6 @@ function EditProfile({ show, setShow }) {
               className="rounded mt-2 ms-2"
               type="text"
               placeholder="UserID"
-              disabled
               {...register("userid", { required: true })}
             />
             <input
@@ -77,12 +89,12 @@ function EditProfile({ show, setShow }) {
               placeholder="Email"
               {...register("email", { required: true })}
             />
-            <input
+            {/* <input
               className="rounded mt-2 ms-2"
               type="number"
               placeholder="Mobile Number"
               {...register("mobile", { required: true })}
-            />
+            /> */}
             <label className="ms-2"> Profile Picture </label>
             <input
               className="rounded mt-2 ms-2"
