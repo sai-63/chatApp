@@ -8,7 +8,7 @@ import socket from "./socket";
 function NavigationBar() {
   let [host, setHost] = useState("");
   let [showModal, setShowModal] = useState(false);
-
+  console.log(host)
   let navigate = useNavigate();
 
   const activeLink = {
@@ -22,8 +22,11 @@ function NavigationBar() {
     let host = localStorage.getItem("userId");
     socket.emit("remove-user", host);
     localStorage.clear();
+    setHost("");
     navigate("/login");
+    
   }
+  
   // useEffect(() => {
   //   const token = localStorage.getItem("token");
 
@@ -62,7 +65,7 @@ function NavigationBar() {
     </button>
     <div className="collapse navbar-collapse" id="navbarSupportedContent">
       <ul className="ms-auto navbar-nav">
-        {host.length === 0 && (
+        {host?.length === 0 && (
           <>
             <li className="nav-item">
               <NavLink
@@ -92,10 +95,22 @@ function NavigationBar() {
                 {"  "}
               </NavLink>
             </li>
+
+            <li className="nav-item">
+            <button
+              className="nav-link"
+              activeClassName="active"
+              onClick={handleLogout}
+            >
+              Logout
+              {"   "}
+            </button>
+          </li>
+
           </>
         )}
         
-        {host.length !== 0 && (
+        {host?.length !== 0 && (
           
           <li className="nav-item">
             <button
