@@ -26,7 +26,7 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
     SignalRService.startConnection();
     setHost(localStorage.getItem("userId"));
     SignalRService.setReceiveMessageCallback(({ user, message }) => {
-      setPrevMessages(prevMessages => [...prevMessages, { senderId: user, message: message , receiverId: person.id}]);
+      setPrevMessages(prevMessages => [...prevMessages, { senderId: user, message: message , recieverId: person.id}]);
     });
     console.log("Prev in signalR:",prevMessages);
     console.log("Bye");
@@ -78,6 +78,51 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
   function handleChange(event) {
     setValue(event.target.value);
   }
+  function handleEmoji(emoji) {
+    setValue(value + emoji.emoji);
+  }
+  function handleFile(event) {
+    console.log(event.target.files[0]);
+    setFile(event.target.files[0]);
+    setValue(event.target.files[0].name);
+    setDisabled(true);
+  }
+  /*function submitFile() {
+    let obj = {};
+    setSpin(true);
+
+    obj.senderId = host;
+    obj.receiverId = person.id;
+    obj.timestamp = Date.now()
+
+    obj.fileName = file.name;
+
+    //obj.bfile = bFile;
+
+    let fd = new FormData();
+
+    fd.append("details", JSON.stringify(obj));
+
+    fd.append("file", file);
+
+    axios
+      .post("https://chtvthme.onrender.com/conversation-api/send-file", fd)
+      .then((res) => {
+        setValue("");
+        setSpin(false);
+        setDisabled(false);
+        const socketObj = {};
+        socketObj.senderId = host;
+        socketObj.receiverId = person.userid;
+        socket.emit("message-sent", socketObj);
+      })
+      .catch((err) => console.log(err.message));
+  }*/
+
+  function cancelFile() {
+    setValue("");
+    setDisabled(false);
+  }
 
 
   
@@ -96,7 +141,7 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
         <OverlayTrigger  trigger={"click"}  key={"top"}  placement={"top"}  rootClose={true}
           overlay={
             <Popover>
-              <EmojiPicker  />
+              <EmojiPicker onEmojiClick={handleEmoji} />
             </Popover>
           }
         >
