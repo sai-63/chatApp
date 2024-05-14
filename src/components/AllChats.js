@@ -6,6 +6,8 @@ import { NavLink } from "react-router-dom";
 // import EditProfile from "./EditProfile";
 import Convo from './Convo';
 import Chat from "./Chat";
+import Header from "./Header";
+import { Button } from 'react-bootstrap';
 
 function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson,isgrp,showIsGrp,isuser,showIsUser,grpmsgs,setGrpMsgs}) {
   let [host, setHost] = useState("");
@@ -18,6 +20,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
   let [jmsgs,setJmsgs]=useState([]);
   let [whatgrp,setWhatGrp]=useState("");
 
+  
   useEffect(()=>{
     setHost(localStorage.getItem("userId"));
     setUsername(localStorage.getItem("username"))
@@ -32,12 +35,14 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
 
 
   useEffect(() => {
+    const interval=setInterval(() => {
     axios
       .get("http://localhost:5290/Chat/GetUserGroups",{params:{username:username}})
       .then((res) => setUserGroups(res.data))
       .catch((err) => console.log(err));
-  }, [username]);
-  
+    },2000);
+    return ()=>clearInterval(interval);
+  },[username]);
 
   function handleChange(event) {
     axios
@@ -121,8 +126,36 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
       })
       .catch((e)=>console.log(e));      
   }
+
+
+  function addurfrnd(group){
+    const frndname = prompt("Enter frnd name :");
+    console.log('grpname',group.name,frndname);    
+    const fdata={username:frndname,groupname:group.name}
+    axios
+      .get("http://localhost:5290/Chat/GetUserOfGroup",{params:{groupname:fdata.groupname}})
+      .then((res)=>{
+        setJuser(res.data)
+        console.log("In Getusersofgroup ",fdata.groupname,juser)
+    })
+    axios
+      .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:fdata.groupname}})
+      .then((res)=>{
+        setJmsgs(res.data)
+        console.log("In Getgroupmessages ",fdata.messages)
+    })
+    axios
+      .post("http://localhost:5290/Chat/AddUsersToGroup", fdata)
+      .then((res) => {
+        console.log("User added to group",joingroup);
+        const fnewjoining={id:res.data.id,name:fdata.name,users:juser,messages:jmsgs}
+        setUserGroups([...usergroups,fnewjoining])
+      })
+      .catch((err) => console.log(err));    
+  }
+
   function joinGroup(){
-    let gname = prompt("Enter group name to joinnnnnn:");
+    const gname = prompt("Enter group name to joinnnnnn:");
     console.log('grpname',gname,username);    
     const data={username:username,groupname:gname}
     axios
@@ -148,7 +181,8 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
         })
         .catch((err) => console.log(err));
     }
-  } 
+  }
+
   
   return (
     <div className="chats overflow-auto" style={{ maxHeight: "100%" }}>
@@ -207,16 +241,15 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
             )
         )}
         {usergroups?.map((group) => (
-        <div key={group.name} className="mt-3">
-          <>
-          <NavLink onClick={()=> {groupChat(group);showIsGrp(true);showIsUser(false);setWhatGrp(group.name)} } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">          
-          {/* showIsUser(!isuser) */}
-          {/* Now <NavLink onClick={()=> {groupChat(group); showIsGrp("group");setWhatGrp(group.name)} } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">           */}
-              <p className="lead ms-2 text-white fs-4 d-inline"> {group.name} </p>
-            </NavLink>
-          </>
-          {/*<p className="fs-6 text-white">{group.name}</p>
-          <button className="btn btn-primary" onClick={() => groupChat({ grpname:group.name,msg: group.messages})}>Show Messages</button>*/}
+        <div key={group.name} className="mt-3 d-flex justify-content-between align-items-center">
+
+          <div>
+            <NavLink onClick={()=> {groupChat(group);showIsGrp(true);showIsUser(false);setWhatGrp(group.name)} } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">
+              <p className="lead ms-2 text-white fs-4 d-inline"> {group.name} </p>              
+            </NavLink>            
+          </div>
+
+          <div><Button onClick={()=>addurfrnd(group)}>Add ur frnd</Button></div>
         </div>        
         ))}
         </div>

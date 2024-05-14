@@ -65,7 +65,7 @@ function Convo({ person,grpperson, setShow, setMessage, search ,prevMessages ,se
           setIsLoaded(false);
           setScroll(!scroll);
           setMessage("");
-          //showIsUser(false);          
+          //showIsUser(false);         
           // showGrpPerson("");
         })
         .catch((err) => console.log(err.message));

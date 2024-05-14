@@ -1,10 +1,13 @@
 import React, { useState } from "react";
-import { OverlayTrigger, Popover } from "react-bootstrap";
+import { Button, OverlayTrigger, Popover } from "react-bootstrap";
 import { AiOutlineSearch, AiOutlineCloseCircle } from "react-icons/ai";
 import { BiArrowBack } from "react-icons/bi";
 import { FiMoreVertical } from "react-icons/fi";
 import socket from "./socket";
 import { useEffect } from "react";
+import axios from "axios";
+import AllChats from "./AllChats";
+import {bothfea} from './AllChats';
 
 function Header({ person, showPerson, setSearch,grpperson,showGrpPerson,isuser,showIsUser,isgrp,showIsGrp}) {
   const [iconActive, setIconActive] = useState(true);
@@ -94,7 +97,7 @@ function Header({ person, showPerson, setSearch,grpperson,showGrpPerson,isuser,s
             {console.log("super man we have isuser and isgrp && fstate as  ",isuser,isgrp,fstate)}
           {person.username && !fstate?  
           (person.username?.charAt(0).toUpperCase() +person.username?.slice(1)):
-          (grpperson.name?.charAt(0).toUpperCase() +grpperson.name?.slice(1))}
+          grpperson.name?.charAt(0).toUpperCase() +grpperson.name?.slice(1)}
           </span>
         </div>
       </div>
