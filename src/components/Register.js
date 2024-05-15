@@ -9,6 +9,7 @@ function Register() {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [nickname, setNickname] = useState('');
   let {
     register,
     handleSubmit,
@@ -23,11 +24,16 @@ function Register() {
   function submitRegister(e) {
     const url = 'http://localhost:5290/Signup';
     const data = {
-      Id:'',
-      Username:username,
-      Password:password,
-      Email:email
+      Id: '',
+      Username: username,
+      Password: password,
+      Email: email,
+      Nickname: nickname,
+      Friends: []
     };
+
+    // Log the data to check if nickname is correct
+    console.log(data);
 
     axios.post(url, data)
       .then((response) => {
@@ -36,7 +42,7 @@ function Register() {
           // Redirect to login page
           navigate("/login");
         } else {
-          //alert(response.statusText);
+          // alert(response.statusText);
         }
       })
       .catch((error) => {
@@ -46,6 +52,7 @@ function Register() {
     setEmail('');
     setUsername('');
     setPassword('');
+    setNickname('');
   }
 
   return (
@@ -53,25 +60,22 @@ function Register() {
       className="container d-flex flex-wrap justify-content-around h-100 overflow-auto"
       style={{ position: "relative" }}
     >
-      
-        
-      <div className=" rounded d-flex align-items-center justify-content-center me-5 ms-5 ">
+      <div className="rounded d-flex align-items-center justify-content-center me-5 ms-5">
         <form
           className="d-flex flex-column"
-          style={{ position: "" }}
           onSubmit={handleSubmit(submitRegister)}
         >
-          <h1 className="display-6 mb-3 text- text-center">
-            {" "}
+          <h1 className="display-6 mb-3 text-center">
             Register Here 
           </h1>
           {err.length !== 0 && <p className="lead text-danger">*{err}</p>}
           <input
             type="text"
             className="mt-3 rounded fs-5 ps-2"
-            placeholder="Enter your Name"
-            value={username} onChange={(e)=>setUsername(e.target.value)} required
-            //{...register("username", { required: true })}
+            placeholder="Enter your User Name"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
           />
           <label className="ms-5 text-dark">
             *This will be used as your Name in the Chats
@@ -79,43 +83,40 @@ function Register() {
           {errors.username?.type === "required" && (
             <p className="text-danger">*UserName is required</p>
           )}
-          {/*<input
+          <input
             type="text"
             className="mt-3 rounded fs-5 ps-2"
-            placeholder="Create a UserID"
-            //{...register("userid", { required: true })}
+            placeholder="Enter your Nick Name"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            required
           />
           <label className="ms-5 text-dark">
-            *This will be used as your UserID in the Chats
+            *This will be used as your Nick Name for the Chats
           </label>
-          {errors.userid?.type === "required" && (
-            <p className="text-danger">*UserID is required</p>
-          )}*/}
+          {errors.nickname?.type === "required" && (
+            <p className="text-danger">*NickName is required</p>
+          )}
           <input
             type="email"
             className="mt-3 rounded fs-5 ps-2"
             placeholder="Enter your Email"
-            value={email} onChange={(e)=>setEmail(e.target.value)} required
-            //{...register("email", { required: true })}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
           />
           {errors.email?.type === "required" && (
             <p className="text-danger">*Email is required</p>
           )}
-          {/*<input
-            type="number"
-            className="mt-3 rounded fs-5 ps-2"
-            placeholder="Enter Mobile Number"
-           // {...register("mobile")}
-          />*/}
           <div className="d-flex p-0">
             <input
               type={show ? "text" : "password"}
               className="mt-3 rounded fs-5 ps-2"
               placeholder="Enter Password"
-              value={password} onChange={(e)=>setPassword(e.target.value)} required
-              //{...register("password", { required: true })}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
             />
-            
             <NavLink
               onClick={() => setShow(!show)}
               className="mt-3 ms-2 nav-link pt-1"
@@ -130,38 +131,11 @@ function Register() {
           {errors.password?.type === "required" && (
             <p className="text-danger">*Password is required</p>
           )}
-          {/*
-          <div className="d-flex p-0">
-            <input
-              type={repeatShow ? "text" : "password"}
-              className="mt-3 rounded fs-5 ps-2"
-              placeholder="Repeat Password"
-              {...register("repeatPassword", { required: true })}
-            />
-            <NavLink
-              onClick={() => setRepeatShow(!repeatShow)}
-              className="mt-3 ms-2 nav-link pt-1"
-            >
-              {repeatShow ? (
-                <BiHide className="fs-4 m-0" />
-              ) : (
-                <BiShow className="fs-4 m-0" />
-              )}
-            </NavLink>
-          </div>
-          {errors.repeatPassword?.type === "required" && (
-            <p className="text-danger">*RepeatPassword is required</p>
-          )}
-          <label className="mt-3 text-dark lead fs-5">
-            Upload your profile pic
-          </label>
-          <input type="file" {...register("picture")} /> */}
           <Button
             className="btn btn-success text-center m-auto mt-3 mb-1"
             type="submit"
             style={{ width: "35%" }}
           >
-            {" "}
             Submit
           </Button>
         </form>
