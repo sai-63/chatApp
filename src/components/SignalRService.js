@@ -92,6 +92,34 @@ class SignalRService {
       this.removeMessageCallback = callback;
     }
   }
+
+
+  //Group Chat SignalR
+  // Join a group (add this where appropriate)
+  async joinGroup(groupName) {
+    await this.connection.invoke("JoinGroup", groupName);
+  }
+
+  // Send message to group
+  sendMessageToGroup(groupName, data) {
+    if (this.connection) {
+      this.connection.invoke("SendToGroup", groupName, this.userId, data)
+      .catch(err => console.error(err.toString()));
+    }else{
+      console.error("SignalR connection is not established.");
+    }
+  }
+
+  // Remove message from group
+  removeMessageFromGroup(groupName, messageId, chatDate) {
+    if (this.connection) {
+      this.connection.invoke("RemoveMessageFromGroup", groupName, messageId, chatDate)
+      .catch(err => console.error(err.toString()));
+    }else{
+      console.error("SignalR connection is not established.");
+    }
+  }
+
 }
 
 export default new SignalRService();

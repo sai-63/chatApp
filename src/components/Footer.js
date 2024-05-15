@@ -11,7 +11,7 @@ import { GrAttachment } from "react-icons/gr";
 import socket from "./socket";
 import SignalRService from './SignalRService';
 
-function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessages}) {
+function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , setPrevMessages,finalmsg,setFinalMsg}) {
   let { handleSubmit } = useForm();
   let [host, setHost] = useState("");
   let [receiver,setReciever] = useState("");
@@ -75,7 +75,7 @@ function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessa
     });
 }
 
-  function submitMessage() {
+  function submitMessage() {    
     setSpin(true);
     value = value.trimStart();
     const messageId = generateUUID();

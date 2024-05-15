@@ -6,29 +6,45 @@ import { FiMoreVertical } from "react-icons/fi";
 import socket from "./socket";
 import { useEffect } from "react";
 
-function Header({ person, showPerson, setSearch }) {
+function Header({ person, showPerson, setSearch,grpperson,showGrpPerson,isuser,showIsUser,isgrp,showIsGrp }) {
   const [iconActive, setIconActive] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typing, setTyping] = useState(null);
   const [host, setHost] = useState("");
 
-  socket.on("allusers", (allUsers) => {
-    setOnlineUsers(allUsers);
-  });
+  //For checking the values of isuser and isgrp 
+  useEffect(()=>{
+    console.log("At first header we have isuser and isgrp as  ",isuser,isgrp)
+  },[])
 
-  socket.on("typing", (data) => {
-    setTyping(data);
-  });
+  //To change the header value acc to isuer and isgrp
+  let [fstate,setFState]=useState(true);
+  useEffect(()=>{
+    setFState(!fstate)
+    console.log("In heade we have isuser isgrp for 1st as",isgrp,isuser);
+  },[isuser,isgrp])
 
-  socket.on("not-typing", (data) => {
-    setTyping(null);
-  });
+  // socket.on("allusers", (allUsers) => {
+  //   setOnlineUsers(allUsers);
+  // });
 
-  useEffect(() => {
-    socket.emit("reload");
-    const host = localStorage.getItem("user");
-    setHost(host);
-  }, []);
+  // socket.on("typing", (data) => {
+  //   setTyping(data);
+
+  
+
+  
+  // });
+
+  // socket.on("not-typing", (data) => {
+  //   setTyping(null);
+  // });
+
+  // useEffect(() => {
+  //   socket.emit("reload");
+  //   const host = localStorage.getItem("user");
+  //   setHost(host);
+  // }, []);
 
   return (
     <div
@@ -43,8 +59,13 @@ function Header({ person, showPerson, setSearch }) {
         />
         <div className="ms-4 p-0">
           <span className="fs-5 p-0 m-0">
-            {person.username?.charAt(0).toUpperCase() +
-              person.username?.slice(1)}
+          {console.log("super man we have isgrp and grpperson  ",isgrp,grpperson)}
+          {console.log("super man we have isuser and person",isuser,person)}
+          {person.username && !fstate? 
+            (person.username?.charAt(0).toUpperCase() +
+              person.username?.slice(1)):
+            grpperson.name?.charAt(0).toUpperCase() +grpperson.name?.slice(1)
+          }
           </span>
           
         </div>
