@@ -10,6 +10,8 @@ function AllChats({ show, setShow, message, setMessage, showPerson }) {
   let [showModal, setShowModal] = useState(false);
   let [userids, setUserId] = useState([]);
   let [username,setUsername] = useState('');
+  let [state,setState] = useState(false);
+  const [inputValue, setInputValue] = useState('');
 
   useEffect(()=>{
     setHost(localStorage.getItem("userId"));
@@ -18,25 +20,72 @@ function AllChats({ show, setShow, message, setMessage, showPerson }) {
 
   useEffect(() => {
     axios
-      .get("http://localhost:5290/GetOtherUsers",{params:{id:host}})
+      .get("http://localhost:5290/GetFriends",{params:{id:host}})
       .then((res) => setUserId(res.data))
       .catch((err) => console.log(err));
-  }, [host]);
+  }, [host,state]);
 
-  function handleChange(event) {
-    axios
+  const handleInputChange = (event) => {
+    const newValue = event.target.value;
+    setInputValue(newValue);
+
+    // Perform action when input is changing
+    performActionWhileTyping(newValue);
+  };
+
+  const performActionWhileTyping = (value) => {
+    // Check if input is not empty
+    if (value.trim() !== '') {
+      // Perform action when input is changing
+      console.log('Performing action while typing...');
+      axios
       .get("http://localhost:5290/GetOtherUsers",{params:{id:host}})
       .then((res) =>
         setUserId(
           res.data.filter((obj) =>
-            obj.id.toLowerCase().includes(event.target.value.toLowerCase())
+            obj.id.toLowerCase().includes(value.toLowerCase())
           )
         )
       )
       .catch((err) => console.log(err));
-  }
+    } else {
+      // Perform action when input is empty
+      console.log('Input field is empty');
+      axios
+      .get("http://localhost:5290/GetFriends",{params:{id:host}})
+      .then((res) => setUserId(res.data))
+      .catch((err) => console.log(err));
+    }
+  };
+
+  // function handleChange(event) {
+  //   axios
+  //     .get("http://localhost:5290/GetOtherUsers",{params:{id:host}})
+  //     .then((res) =>
+  //       setUserId(
+  //         res.data.filter((obj) =>
+  //           obj.id.toLowerCase().includes(event.target.value.toLowerCase())
+  //         )
+  //       )
+  //     )
+  //     .catch((err) => console.log(err));
+  //   setState(!state);
+  // }
 
   const showChat = (obj) => {
+    console.log("Object Id ----------:  ",host,"  ",obj.id)
+    const data={
+      userId:host,
+      friendId:obj.id
+    }
+    axios
+    .post("http://localhost:5290/AddFriend",data)
+    .then((response)=>{
+      console.log("Posted Successfullyyyyyyyyyyyyyyyyyyyy")
+      console.log(response.data)
+    })
+    .catch((err) => console.log(err));
+    console.log("After posttttttttt")
     showPerson(obj);
   };
 
@@ -60,7 +109,8 @@ function AllChats({ show, setShow, message, setMessage, showPerson }) {
           <input
             type="search"
             className="w-75 rounded ps-2"
-            onChange={handleChange}
+            value={inputValue}
+            onChange={handleInputChange}
             placeholder="Search by userid.."
           />
         </div>

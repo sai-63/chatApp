@@ -4,6 +4,7 @@ class SignalRService {
   constructor() {
     this.connection = null;
     this.receiveMessageCallback = null;
+    this.removeMessageCallback = null;
     this.isConnected = false;
     this.userId = null;
     this.receiver = null;
@@ -37,25 +38,44 @@ class SignalRService {
           setTimeout(() => this.startConnection(), 5000); 
         });
 
-      this.connection.on("ReceiveMessage", (user, message) => {
-        console.log(`${user}: ${message}`,this.receiver);
+      this.connection.on("ReceiveMessage", (user,chat) => {
+        console.log(`${chat.senderId}: ${chat.message}`,this.receiver);
         if(this.receiver === user || this.userId === user){
         if (this.receiveMessageCallback) {
-          this.receiveMessageCallback({ user, message });
+          this.receiveMessageCallback(chat);
         }}
       });
+
+      this.connection.on("MessageRemoved", (messageId,chatDate) => {
+        // Remove message from UI using messageId
+        // Example: document.getElementById(messageId).remove();
+        if (this.removeMessageCallback) {
+          this.removeMessageCallback(messageId,chatDate);
+        }
+    });
+    
+
     }
   }
 
-  sendMessage(user, message, receiverId = null) {
+  sendMessage(user, data, receiverId = null) {
     if (this.connection) {
       if (receiverId) {
-        this.connection.invoke("SendToUser", this.userId, receiverId, message)
+        this.connection.invoke("SendToUser", this.userId, receiverId, data)
           .catch(err => console.error(err.toString()));
       } else {
-        this.connection.invoke("SendMessage", this.userId, message)
+        this.connection.invoke("SendMessage", this.userId, data)
           .catch(err => console.error(err.toString()));
       }
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+
+  removeMessage(receiverId,messageId,chatDate) {
+    if (this.connection) {
+      this.connection.invoke("RemoveMessage",receiverId, messageId,chatDate)
+        .catch(err => console.error(err.toString()));
     } else {
       console.error("SignalR connection is not established.");
     }
@@ -64,6 +84,12 @@ class SignalRService {
   setReceiveMessageCallback(callback) {
     if (!this.receiveMessageCallback) {
       this.receiveMessageCallback = callback;
+    }
+  }
+
+  setRemoveMessageCallback(callback){
+    if (!this.removeMessageCallback) {
+      this.removeMessageCallback = callback;
     }
   }
 }

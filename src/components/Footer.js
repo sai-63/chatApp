@@ -11,7 +11,7 @@ import { GrAttachment } from "react-icons/gr";
 import socket from "./socket";
 import SignalRService from './SignalRService';
 
-function Footer({ person ,prevMessages , setPrevMessages}) {
+function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessages}) {
   let { handleSubmit } = useForm();
   let [host, setHost] = useState("");
   let [receiver,setReciever] = useState("");
@@ -19,13 +19,41 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
   let [disabled, setDisabled] = useState(false);
   let [file, setFile] = useState(null);
   let [spin, setSpin] = useState(false);
+  let data = {};
   const [message, setMessage] = useState('');
   const [user, setUser] = useState('');
   
   useEffect(()=>{
     localStorage.setItem("reciever",person.id);
     startConnection();
-  },[person,prevMessages]);
+  },[person]);
+
+  useEffect(() => {
+    SignalRService.setReceiveMessageCallback((chat) => {
+      const chatDate = new Date(chat.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
+      setPrevMessages(prevMessages => {
+        const updatedMessages = { ...prevMessages };
+        if (updatedMessages[chatDate]) {
+          updatedMessages[chatDate].push(chat); // Append chat to existing date's messages
+        } else {
+          updatedMessages[chatDate] = [chat]; // Create a new list for the date if it doesn't exist
+        }
+        return updatedMessages;
+      });
+    });
+  }, []);
+  
+  // useEffect(() => {
+  //   SignalRService.setRemoveMessageCallback((id) => {
+  //     // Function to remove the chat with matching messageId
+  //     const removeMessage = (messageId) => {
+  //       setPrevMessages(prevMessages => prevMessages.filter(message => message.messageId !== messageId));
+  //     };
+  
+  //     // Call the function to remove the message with the provided id
+  //     removeMessage(id);
+  //   });
+  // }, [prevMessages]);
 
   function startConnection() {
 
@@ -33,22 +61,30 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
     SignalRService.startConnection();
     console.log("Reached");
     setHost(localStorage.getItem("userId"));
-    SignalRService.setReceiveMessageCallback(({ user, message }) => {
-      setPrevMessages(prevMessages => [...prevMessages, { senderId: user, message: message , recieverId: person.id}]);
-    });
     // console.log("Prev in signalR:",prevMessages);
     // console.log("Bye");
 
   }
 
+  function generateUUID() {
+    // Generate a random UUID
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0,
+            v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
   function submitMessage() {
     setSpin(true);
     value = value.trimStart();
-    const data = {
+    const messageId = generateUUID();
+    data = {
+      messageId:messageId,
       senderId:host,
       receiverId:person.id,
       message: value,
-      timestamp: Date.now()
+      timestamp: new Date().toISOString()
     }
     if (value.length!==0) {
       axios.post('http://localhost:5290/Chat/Send Message', data)
@@ -67,8 +103,8 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
           console.log(error);
         })
       console.log("Person.id:",person.id);
-      SignalRService.sendMessage(host, value, host);
-      SignalRService.sendMessage(host, value, person.id); // Send message via SignalR
+      // SignalRService.sendMessage(host, data, host);
+      SignalRService.sendMessage(host, data, person.id); // Send message via SignalR
     }
     
   }
@@ -96,6 +132,20 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
     setValue(event.target.files[0].name);
     setDisabled(true);
   }
+
+  function submitFile() {
+    if (file) {
+        SignalRService.sendFile(file);
+    }
+  }
+
+  // function submitFile(event){
+  //   SignalRService.sendFile(event);
+  // }
+
+  // function downloadFile(event){
+  //   SignalRService.downloadFile(event);
+  // }
   /*function submitFile() {
     let obj = {};
     setSpin(true);
@@ -166,7 +216,8 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
           rootClose={true}
           overlay={
             <Popover className="d-block">
-              <input type="file" />
+              <input type="file" id="fileInput" onchange={submitFile} />
+              <button onclick={SignalRService.downloadFile}>Download File</button>
             </Popover>
           }
         >
