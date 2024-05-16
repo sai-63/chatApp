@@ -20,6 +20,7 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
   let [file, setFile] = useState(null);
   let [spin, setSpin] = useState(false);
   let data = {};
+  let dataa={}
   const [message, setMessage] = useState('');
   const [user, setUser] = useState('');
   
@@ -27,12 +28,30 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
     localStorage.setItem("reciever",person.id);
     startConnection();
   },[person]);
+  useEffect(()=>{
+    localStorage.setItem("reciever",grpperson.id);
+    startConnection();
+  },[grpperson]);
 
   useEffect(() => {
     SignalRService.setReceiveMessageCallback((chat) => {
       const chatDate = new Date(chat.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
       setPrevMessages(prevMessages => {
         const updatedMessages = { ...prevMessages };
+        if (updatedMessages[chatDate]) {
+          updatedMessages[chatDate].push(chat); // Append chat to existing date's messages
+        } else {
+          updatedMessages[chatDate] = [chat]; // Create a new list for the date if it doesn't exist
+        }
+        return updatedMessages;
+      });
+    });
+  }, []);
+  useEffect(() => {
+    SignalRService.setReceiveMessageCallback((chat) => {
+      const chatDate = new Date(chat.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
+      setPrevMessages(finalmsg => {
+        const updatedMessages = { ...finalmsg };
         if (updatedMessages[chatDate]) {
           updatedMessages[chatDate].push(chat); // Append chat to existing date's messages
         } else {
@@ -73,19 +92,27 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
             v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
-}
+  }
+  function ggenerateUUID() {
+    // Generate a random UUID
+    return 'xxxxxx-xxxx-xxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0;
+        return r.toString(16);
+    });
+  }
 
   function submitMessage() {    
     setSpin(true);
-    value = value.trimStart();
-    const messageId = generateUUID();
-    data = {
+    value = value.trimStart();    
+    if(person.id!=null && grpperson.id==null){
+      const messageId = generateUUID();
+      data = {
       messageId:messageId,
       senderId:host,
       receiverId:person.id,
       message: value,
       timestamp: new Date().toISOString()
-    }
+      }
     if (value.length!==0) {
       axios.post('http://localhost:5290/Chat/Send Message', data)
         .then((res) => {
@@ -106,12 +133,45 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
       // SignalRService.sendMessage(host, data, host);
       SignalRService.sendMessage(host, data, person.id); // Send message via SignalR
     }
-    
+  }else{
+    console.log("Entered sendgrpmsgs hoho")
+    const messageId = ggenerateUUID();
+    dataa = {
+      senderId:host,
+      message: value,
+      Timestamp: new Date().toISOString()
+      }
+    if (value.length!==0) {
+      const xy={groupname:grpperson.name,messages:dataa}
+      console.log("The one we have left is ",xy,xy.groupname)
+      axios.post("http://localhost:5290/Chat/SendGrpMessage?groupname="+grpperson.name,dataa)
+        .then((res) => {
+          setValue("");
+          setSpin(false);
+          alert('Message successfully sent');
+          console.log(res.data);
+          console.log(host);
+          setFinalMsg([...finalmsg, dataa]);
+          // console.log(prevMessages,data);
+          // console.log([...prevMessages,data])
+          // console.log("Prev in footer",prevMessages);
+        })
+        .catch((error) => {
+          console.log(error);
+        })
+      console.log("Grpperson id:",grpperson.id);
+      // SignalRService.sendMessage(host, data, host);
+      SignalRService.sendMessageToGroup(localStorage.getItem("groupid"),host, dataa); // Send message via SignalR
+    }
+  }
   }
 
   useEffect(()=>{
-    // console.log("Prev messages changed in footer :",prevMessages);
+    console.log("Prev messages changed in footer :",prevMessages);
   },[prevMessages]);
+  useEffect(()=>{
+    console.log("Final messages in footer : ",finalmsg)
+  },[finalmsg])
 
   const handleMessageChange = (event) => {
     setMessage(event.target.value);

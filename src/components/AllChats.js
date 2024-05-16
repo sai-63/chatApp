@@ -112,6 +112,13 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
   //Group Chat setting function
   const groupChat=(gobj)=>{
     showGrpPerson(gobj);
+    axios
+      .get("http://localhost:5290/Chat/Getgroupid",{params:{ggname:gobj.name}})
+      .then((res)=>{
+        console.log("Hooray",res.data);
+        localStorage.setItem("groupid",res.data);
+      } 
+    )
     //showIsGrp("group");
     //console.log("In allchats group now it is",isgrp)
     console.log("From clicking on group object we got",gobj);
@@ -270,7 +277,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
         <div key={group.name} className="mt-3 d-flex justify-content-between align-items-center">
 
           <div>
-            <NavLink onClick={()=> {showIsGrp(true);showIsUser(false);groupChat(group);setWhatGrp(group.name)} } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">
+            <NavLink onClick={()=> {showIsGrp(true);showIsUser(false);groupChat(group);setWhatGrp(group.name);} } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">
               <p className="lead ms-2 text-white fs-4 d-inline"> {group.name} </p>              
             </NavLink>            
           </div>

@@ -8,12 +8,15 @@ class SignalRService {
     this.isConnected = false;
     this.userId = null;
     this.receiver = null;
+    this.gid=null;
   }
 
   startConnection() {
+    //console.log("For testing we have grpperson as",localStorage.getItem(grpperson))
     this.userId = localStorage.getItem("userId");
     this.receiver = localStorage.getItem("reciever");
-    console.log("Out User connected:",this.userId," Reciever is:",this.receiver);
+    this.gid=localStorage.getItem("groupid")
+    console.log("Out User connected:",this.userId," Reciever is:",this.receiver,"Group id",this.gid);
     if (!this.isConnected) {
       const connectionUrl = `http://localhost:5290/notificationHub?userId=${this.userId}`;
 
@@ -43,6 +46,14 @@ class SignalRService {
         if(this.receiver === user || this.userId === user){
         if (this.receiveMessageCallback) {
           this.receiveMessageCallback(chat);
+        }}
+      });
+
+      this.connection.on("ReceiveGrpMessage", (user,group) => {
+        console.log(`${group.senderId}: ${group.message}`,this.gid);
+        if(this.gid === localStorage.getItem("groupid")){
+        if (this.receiveMessageCallback) {
+          this.receiveMessageCallback(group);
         }}
       });
 
@@ -96,15 +107,17 @@ class SignalRService {
 
   //Group Chat SignalR
   // Join a group (add this where appropriate)
-  async joinGroup(groupName) {
-    await this.connection.invoke("JoinGroup", groupName);
+  joinGroup(groupName) {
+    this.connection.invoke("JoinGroup", groupName);
   }
 
   // Send message to group
-  sendMessageToGroup(groupName, data) {
+  sendMessageToGroup(grpid,userId,dataa) {
     if (this.connection) {
-      this.connection.invoke("SendToGroup", groupName, this.userId, data)
+      this.connection.invoke("SendToGroup", grpid, userId, dataa)
       .catch(err => console.error(err.toString()));
+      console.log("got these dudes",grpid,userId,dataa)
+      console.log("msg sending dont know")      
     }else{
       console.error("SignalR connection is not established.");
     }

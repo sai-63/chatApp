@@ -64,7 +64,7 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
           setIsLoaded(false);
           setScroll(!scroll);
           setMessage("");
-          //showIsUser(false);         
+          showIsUser(false);         
           showGrpPerson("");
         })
         .catch((err) => console.log(err.message));
@@ -86,7 +86,7 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
           //setGrpMsgs(res.data);
           setIsLoaded(false);
           setFinalMsg(res.data);
-          // showIsGrp(false);
+          showIsGrp(false);
           //setPrevMessages([]);
         })
         .catch((e)=>console.log(e.message));
