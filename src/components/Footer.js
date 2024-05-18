@@ -1,6 +1,6 @@
 import axios from "axios";
 import EmojiPicker from "emoji-picker-react";
-import React, { createElement, useEffect, useState } from "react";
+import React, { createElement, useContext, useEffect, useState } from "react";
 import { Button, OverlayTrigger, Popover } from "react-bootstrap";
 import Spinner from "react-bootstrap/Spinner";
 import { useForm } from "react-hook-form";
@@ -10,7 +10,7 @@ import { GiCancel } from "react-icons/gi";
 import { GrAttachment } from "react-icons/gr";
 import socket from "./socket";
 import SignalRService from './SignalRService';
-
+import { UserContext } from "./UserContext";
 function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , setPrevMessages,finalmsg,setFinalMsg}) {
   let { handleSubmit } = useForm();
   let [host, setHost] = useState("");
@@ -22,7 +22,8 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
   let data = {};
   let dataa={}
   const [message, setMessage] = useState('');
-  const [user, setUser] = useState('');
+  const [userr, setUserr] = useState('');
+  const { user, setUser } = useContext(UserContext);
   
   useEffect(()=>{
     localStorage.setItem("reciever",person.id);
@@ -48,14 +49,14 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
     });
   }, []);
   useEffect(() => {
-    SignalRService.setReceiveMessageCallback((chat) => {
-      const chatDate = new Date(chat.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
-      setPrevMessages(finalmsg => {
+    SignalRService.setReceiveGroupMessageCallback((group) => {
+      const chatDate = new Date(group.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
+      setFinalMsg(finalmsg => {
         const updatedMessages = { ...finalmsg };
         if (updatedMessages[chatDate]) {
-          updatedMessages[chatDate].push(chat); // Append chat to existing date's messages
+          updatedMessages[chatDate].push(group); // Append chat to existing date's messages
         } else {
-          updatedMessages[chatDate] = [chat]; // Create a new list for the date if it doesn't exist
+          updatedMessages[chatDate] = [group]; // Create a new list for the date if it doesn't exist
         }
         return updatedMessages;
       });
@@ -104,7 +105,7 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
   function submitMessage() {    
     setSpin(true);
     value = value.trimStart();    
-    if(person.id!=null && grpperson.id==null){
+    if(user.userType==="user"){
       const messageId = generateUUID();
       data = {
       messageId:messageId,
@@ -119,6 +120,7 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
           setValue("");
           setSpin(false);
           alert('Message successfully sent');
+          console.log("msg sent success")
           console.log(res.data);
           console.log(host);
           setPrevMessages([...prevMessages, data]);
@@ -148,7 +150,7 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
         .then((res) => {
           setValue("");
           setSpin(false);
-          alert('Message successfully sent');
+          alert('Grp Message successfully sent');
           console.log(res.data);
           console.log(host);
           setFinalMsg([...finalmsg, dataa]);
@@ -166,12 +168,11 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
   }
   }
 
-  useEffect(()=>{
-    console.log("Prev messages changed in footer :",prevMessages);
-  },[prevMessages]);
-  useEffect(()=>{
-    console.log("Final messages in footer : ",finalmsg)
-  },[finalmsg])
+  // useEffect(()=>{
+  //   console.log("Prev messages changed in footer :",prevMessages);
+  //   console.log("Final messages in footer : ",finalmsg);
+  // },[prevMessages,finalmsg]);
+  
 
   const handleMessageChange = (event) => {
     setMessage(event.target.value);

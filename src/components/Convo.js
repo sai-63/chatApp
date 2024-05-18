@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useEffect, useRef, useState ,useContext} from "react";
+import React, { useEffect, useRef,useState ,useContext} from "react";
 import { Button, Modal, Spinner } from "react-bootstrap";
 import {
   AiFillFileExcel,
@@ -22,8 +22,6 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
   grpperson,finalmsg,setFinalMsg,isuser,showIsUser,isgrp,showIsGrp,grpmsgs,setGrpMsgs
  }) {
   const { user, setUser } = useContext(UserContext);
-  const prevMessagesRef = useRef({});
-  const finalMsgRef = useRef([]);
   //let host = localStorage.getItem("userId");
   let [host, setHost] = useState("");
   let [isLoaded, setIsLoaded] = useState(false);
@@ -68,18 +66,18 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
       axios
         .get(`http://localhost:5290/Chat/GetMessagesSenderIdUserId?senderId=${localStorage.getItem("userId")}&receiverId=${person.id}`)
         .then((response) => {
-          prevMessagesRef.current = response.data;
           setPrevMessages(response.data);
+          setIsLoaded(false)
         });
     }
 
     if (user.userType === "group") {
-      console.log("Entered convo and group have ",prevMessages);
+      console.log("Entered convo and group have ",finalmsg);
       axios
         .get(`http://localhost:5290/Chat/GetGroupMessages?groupname=${grpperson.name}`)
         .then((res) => {
-          finalMsgRef.current = res.data;
           setFinalMsg(res.data);
+          setIsLoaded(false)
         });
     }
   }, [person, grpperson, user.userType]);
@@ -184,9 +182,9 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
   }, []);
 
 
-  useEffect(() => {
-    setIsLoaded(true);
-  }, [person,grpperson]);
+  // useEffect(() => {
+  //   setIsLoaded(true);
+  // }, [person,grpperson]);
 
   useEffect(() => {
     scrollDown();
@@ -209,6 +207,7 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
   const convertMillisecondsToTime = (milliseconds) => {
 return milliseconds;
   };
+
 
   function handleModal(obj,index) {
     console.log("index",index);
@@ -281,12 +280,11 @@ return milliseconds;
         ref={scrollRef}
         className="d-flex flex-column overflow-auto pb-2 bg-light h-100"
       >
-        {console.log("In printing we have prev and final as",prevMessagesRef,finalmsg,user.userType)}
-        {console.log("Sample",prevMessagesRef.current,prevMessagesRef.current)}
+        {console.log("In printing we have prev and final as",prevMessages,finalmsg,user.userType)}
         {/* {user.userType==="user" && Object.keys(prevMessagesRef.current).length !== 0 ? ( */}
         {user.userType==="user"? (
           <div className="mt-auto">
-            {Object.keys(prevMessagesRef.current).map((date) => (
+            {Object.keys(prevMessages).map((date) => (
               <div key={date}>
                 <div className="text-center my-3">
   <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
@@ -294,7 +292,7 @@ return milliseconds;
   </div>
 </div>
                 {console.log("okok we ",{date})}
-                {prevMessagesRef.current[date].map((obj, index) =>                 
+                {prevMessages[date].map((obj, index) =>                 
                   obj.senderId === host ? (
                     <div
                       key={index}

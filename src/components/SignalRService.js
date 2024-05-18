@@ -4,6 +4,7 @@ class SignalRService {
   constructor() {
     this.connection = null;
     this.receiveMessageCallback = null;
+    this.receiveGroupMessageCallback = null;
     this.removeMessageCallback = null;
     this.isConnected = false;
     this.userId = null;
@@ -50,10 +51,11 @@ class SignalRService {
       });
 
       this.connection.on("ReceiveGrpMessage", (user,group) => {
+        console.log("We got user grp from signalr rotation as :",user,group)
         console.log(`${group.senderId}: ${group.message}`,this.gid);
         if(this.gid === localStorage.getItem("groupid")){
-        if (this.receiveMessageCallback) {
-          this.receiveMessageCallback(group);
+        if (this.receiveGroupMessageCallback) {
+          this.receiveGroupMessageCallback(group);
         }}
       });
 
@@ -97,6 +99,11 @@ class SignalRService {
       this.receiveMessageCallback = callback;
     }
   }
+  setReceiveGroupMessageCallback(callback) {
+    if (!this.receiveGroupMessageCallback) {
+      this.receiveGroupMessageCallback = callback;
+    }
+  }
 
   setRemoveMessageCallback(callback){
     if (!this.removeMessageCallback) {
@@ -112,12 +119,10 @@ class SignalRService {
   }
 
   // Send message to group
-  sendMessageToGroup(grpid,userId,dataa) {
+  sendMessageToGroup(groupid,userId,dataa) {
     if (this.connection) {
-      this.connection.invoke("SendToGroup", grpid, userId, dataa)
+      this.connection.invoke("SendToGroup", groupid, userId, dataa)
       .catch(err => console.error(err.toString()));
-      console.log("got these dudes",grpid,userId,dataa)
-      console.log("msg sending dont know")      
     }else{
       console.error("SignalR connection is not established.");
     }
