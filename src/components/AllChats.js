@@ -1,12 +1,12 @@
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState ,createContext, useContext} from "react";
 import { AiFillCloseCircle, AiOutlineSearch } from "react-icons/ai";
 import { CgProfile } from "react-icons/cg";
 import { NavLink } from "react-router-dom";
 // import EditProfile from "./EditProfile";
 import {Button,Icons}from 'react-bootstrap';
+import { UserContext } from './UserContext';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-
 function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson,isgrp,showIsGrp,isuser,showIsUser,grpmsgs,setGrpMsgs}) {
   let [host, setHost] = useState("");
   let [showModal, setShowModal] = useState(false);
@@ -14,6 +14,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
   let [username,setUsername] = useState('');
   let [state,setState] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const { user, setUser } = useContext(UserContext);
 
   //GRoups CoDe
   let [usergroups,setUserGroups]=useState([]);
@@ -41,7 +42,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
       .get("http://localhost:5290/Chat/GetUserGroups",{params:{username:username}})
       .then((res) => setUserGroups(res.data))
       .catch((err) => console.log(err));
-    },2000);
+    },5000);
     return ()=>clearInterval(interval);
   },[username]);
 
@@ -93,6 +94,9 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
   // }
 
   const showChat = (obj) => {
+    setUser({ ...user, userType: "user" });
+    showIsUser(true);
+    showIsGrp(false);
     console.log("Object Id ----------:  ",host,"  ",obj.id)
     const data={
       userId:host,
@@ -111,6 +115,9 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
 
   //Group Chat setting function
   const groupChat=(gobj)=>{
+    setUser({ ...user, userType: "group" });
+    showIsGrp(true);
+    showIsUser(false);
     showGrpPerson(gobj);
     axios
       .get("http://localhost:5290/Chat/Getgroupid",{params:{ggname:gobj.name}})
@@ -259,7 +266,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
             obj.id !== host && (
               <>
                 <NavLink
-                  onClick={() => {showIsUser(true);showIsGrp(false);showChat(obj);}}
+                  onClick={() => {showChat(obj);showIsUser(true);showIsGrp(false);}}
                   className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link"
                 >
                   <p className="lead ms-2 text-white fs-4 d-inline"> {obj.username} </p>
@@ -277,7 +284,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
         <div key={group.name} className="mt-3 d-flex justify-content-between align-items-center">
 
           <div>
-            <NavLink onClick={()=> {showIsGrp(true);showIsUser(false);groupChat(group);setWhatGrp(group.name);} } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">
+            <NavLink onClick={()=> {showIsUser(false);showIsGrp(true);groupChat(group);setWhatGrp(group.name);} } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">
               <p className="lead ms-2 text-white fs-4 d-inline"> {group.name} </p>              
             </NavLink>            
           </div>
@@ -300,7 +307,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
 
       {/* <EditProfile show={showModal} setShow={setShowModal} /> */}
     </div>
-  );
+  );  
 }
 
 export default AllChats;

@@ -4,10 +4,10 @@ import { useNavigate } from "react-router-dom";
 import AllChats from "./AllChats";
 import Conversation from "./Conversation";
 import EmptyChat from "./EmptyChat";
+import { UserProvider } from "./UserContext";
 
 function Chat() {
   let [person, showPerson] = useState({});
-
   const navigate = useNavigate();
   let [show, setShow] = useState(false);
   let [message, setMessage] = useState("");
@@ -69,4 +69,8 @@ function Chat() {
   );
 }
 
-export default Chat;
+export default ()=>(
+  <UserProvider>
+    <Chat />
+  </UserProvider>
+);

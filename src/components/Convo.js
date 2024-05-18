@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState ,useContext} from "react";
 import { Button, Modal, Spinner } from "react-bootstrap";
 import {
   AiFillFileExcel,
@@ -16,10 +16,14 @@ import { IoMdDownload } from "react-icons/io";
 import { RiArrowDropDownLine } from "react-icons/ri";
 import socket from "./socket";
 import SignalRService from './SignalRService';
+import { UserContext } from "./UserContext";
 
 function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessages,showPerson,showGrpPerson,
   grpperson,finalmsg,setFinalMsg,isuser,showIsUser,isgrp,showIsGrp,grpmsgs,setGrpMsgs
  }) {
+  const { user, setUser } = useContext(UserContext);
+  const prevMessagesRef = useRef({});
+  const finalMsgRef = useRef([]);
   //let host = localStorage.getItem("userId");
   let [host, setHost] = useState("");
   let [isLoaded, setIsLoaded] = useState(false);
@@ -28,6 +32,7 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
   const [state, setState] = useState(true);
   const [scroll, setScroll] = useState(false);
   let delObj = {};
+  let [messagesByDate,setMessagesByDate] = useState({});  
 
   useEffect(()=>{
     setHost(localStorage.getItem("userId"));
@@ -35,8 +40,19 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
   function handleClose() {
     setShowModal(false);
     setDeleteObject({});
+  }  
+  // useEffect(()=>{
+  //   setMessagesByDate({});
+  // },[messagesByDate]);
+  useEffect(()=>{
+    finalmsg.forEach((msg) => {
+  const date = new Date(msg.timestamp).toLocaleDateString();
+  if (!messagesByDate[date]) {
+    messagesByDate[date] = [];
   }
-
+  messagesByDate[date].push(msg);
+  });
+},[finalmsg])
   const scrollRef = useRef(null);
 
   function scrollDown() {
@@ -44,68 +60,110 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }
-  {console.log("Entered convo p/g",person,grpperson)}
+  // {console.log("Entered convo p/g",person,grpperson)}
   // This useeffect is to display user chats when isuer return true and isgrp false from AllChats
-  useEffect(() => {    
-    if(isuser&&!isgrp){
-      setHost(localStorage.getItem("userId"));
-      console.log("The big person Object",person);      
-      console.log("Successfully entered and Got User or not:",isuser);
+  useEffect(() => {
+    if (user.userType === "user") {
+      console.log("Entered convo and user have ",prevMessages);
       axios
-        .get("http://localhost:5290/Chat/GetMessagesSenderIdUserId",{params:{senderId:host,receiverId:person.id}})
+        .get(`http://localhost:5290/Chat/GetMessagesSenderIdUserId?senderId=${localStorage.getItem("userId")}&receiverId=${person.id}`)
         .then((response) => {
-          console.log(response)
-          console.log('Hello',host,person.id)
-          console.log("From api user data",response.data);
+          prevMessagesRef.current = response.data;
           setPrevMessages(response.data);
-          //setFinalMsg([]);
-          setShow(false);
-          //setMessage("");
-          setIsLoaded(false);
-          setScroll(!scroll);
-          setMessage("");
-          showIsUser(false);         
-          showGrpPerson("");
-        })
-        .catch((err) => console.log(err.message));
-      }
-      console.log("First useeffect for users ",prevMessages);
-  }, [person,isuser,prevMessages,host]);
+        });
+    }
+
+    if (user.userType === "group") {
+      console.log("Entered convo and group have ",prevMessages);
+      axios
+        .get(`http://localhost:5290/Chat/GetGroupMessages?groupname=${grpperson.name}`)
+        .then((res) => {
+          finalMsgRef.current = res.data;
+          setFinalMsg(res.data);
+        });
+    }
+  }, [person, grpperson, user.userType]);
+  // if(user.userType==="user"){
+  //   console.log("Entered convo and user have ",prevMessages);
+  //   axios
+  //   .get("http://localhost:5290/Chat/GetMessagesSenderIdUserId?senderId="+localStorage.getItem("userId")+"&receiverId="+person.id)
+  //   // .get("http://localhost:5290/Chat/GetMessagesSenderIdUserId",{params:{senderId:localStorage.getItem("senderId"),receiverId:person.id}})
+  //   .then((response) => {
+  //     setPrevMessages(response.data)
+  //   })
+  // }
+  // if(user.userType==="group"){
+  //   console.log("Entered convo have group as ",finalmsg)
+  //   axios
+  //     .get("http://localhost:5290/Chat/GetGroupMessages?groupname="+grpperson.name)
+  //       // .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:grpperson.name}})
+  //     .then((res)=>{
+  //       setFinalMsg(res.data)
+  //   })
+  // }
+  // useEffect(() => {    
+  //   if(isuser&&!isgrp){      
+  //     console.log("The big person Object",person);      
+  //     console.log("Successfully entered and Got User or not:",isuser);
+  //     const senderId = localStorage.getItem("userId");
+  //     const receiverId = person.id;
+  //     axios
+  //       .get("http://localhost:5290/Chat/GetMessagesSenderIdUserId?senderId="+localStorage.getItem("userId")+"&receiverId="+person.id)
+  //       // .get("http://localhost:5290/Chat/GetMessagesSenderIdUserId",{params:{senderId:localStorage.getItem("senderId"),receiverId:person.id}})
+  //       .then((response) => {
+  //         console.log(response)
+  //         console.log('Hello',host,person.id)
+  //         console.log("From api user data",response.data);
+  //         setPrevMessages(response.data);
+  //         setFinalMsg([]);
+  //         setShow(false);
+  //         //setMessage("");
+  //         setIsLoaded(false);
+  //         setScroll(!scroll);
+  //         setMessage("");
+  //         // showIsUser(true);
+  //         showIsGrp(false);      
+  //         showGrpPerson("");
+  //       })
+  //       .catch((err) => console.log(err.message));
+  //     }
+  //     console.log("First useeffect for users ",prevMessages);
+  // }, [person,isuser,host]);
 
   // This useeffect is to display group chats when isuer return false and isgrp true from AllChats
-  useEffect(()=>{        
-    if(isgrp&&!isuser){
-      setHost(localStorage.getItem("userId"));
-      console.log("The big Group Object",grpperson);
-      console.log("Entered groups going for api Yeah successful",isgrp);
-      axios
-        .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:grpperson.name}})
-        .then((res)=>{
-          console.log("Hoohoo group clicked!!");
-          console.log("Got you group data",res.data);
-          //setGrpMsgs(res.data);
-          setIsLoaded(false);
-          setFinalMsg(res.data);
-          showIsGrp(false);
-          //setPrevMessages([]);
-        })
-        .catch((e)=>console.log(e.message));
-      console.log("First useeffect for groups  :",finalmsg)
-    }
-  },[grpperson,isgrp,finalmsg,host])
+  // useEffect(()=>{        
+  //   if(isgrp&&!isuser){
+  //     console.log("The big Group Object",grpperson);
+  //     console.log("Entered groups going for api Yeah successful",isgrp);
+  //     axios
+  //       .get("http://localhost:5290/Chat/GetGroupMessages?groupname="+grpperson.name)
+  //       // .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:grpperson.name}})
+  //       .then((res)=>{
+  //         console.log("Hoohoo group clicked!!");
+  //         console.log("Got you group data",res.data);
+  //         //setGrpMsgs(res.data);
+  //         setIsLoaded(false);
+  //         setFinalMsg(res.data);
+  //         //showIsGrp(true);
+  //         showIsUser(false);
+  //         setPrevMessages([]);
+  //       })
+  //       .catch((e)=>console.log(e.message));
+  //     console.log("First useeffect for groups  :",finalmsg)
+  //   }
+  // },[grpperson,isgrp,host])
   
-
   //Display final messages 
-  useEffect(()=>{
-    console.log("prevmsgs changed")
-    console.log("After calling useeffect and api we got user as ",prevMessages)
-    console.log("After calling useeffect and api we got group as ",finalmsg)
-  },[prevMessages])
-  useEffect(()=>{
-    console.log("finalmsg changed")
-    console.log("After calling useeffect and api we got user as ",prevMessages)
-    console.log("After calling useeffect and api we got group as ",finalmsg)
-  },[finalmsg])
+  // useEffect(()=>{
+  //   console.log("prevmsgs changed")
+  //   console.log("After calling useeffect and api we got user as ",prevMessages)
+  //   console.log("After calling useeffect and api we got group as ",finalmsg)
+  // },[prevMessages])
+  // useEffect(()=>{
+  //   console.log("finalmsg changed")
+  //   console.log("After calling useeffect and api we got user as ",prevMessages)
+  //   console.log("After calling useeffect and api we got group as ",finalmsg)
+  // },[finalmsg])
 
   useEffect(() => {
     SignalRService.setRemoveMessageCallback((id, chatDate) => {
@@ -215,14 +273,7 @@ return milliseconds;
     return currentTime;
   }
 
-  const messagesByDate = {};
-  finalmsg.forEach((msg) => {
-    const date = new Date(msg.timestamp).toLocaleDateString();
-    if (!messagesByDate[date]) {
-      messagesByDate[date] = [];
-    }
-    messagesByDate[date].push(msg);
-  });
+    
 
   return (
     <div style={{ height: "82%", position: "relative" }}>
@@ -230,16 +281,20 @@ return milliseconds;
         ref={scrollRef}
         className="d-flex flex-column overflow-auto pb-2 bg-light h-100"
       >
-        {Object.keys(prevMessages).length !== 0 ? (
+        {console.log("In printing we have prev and final as",prevMessagesRef,finalmsg,user.userType)}
+        {console.log("Sample",prevMessagesRef.current,prevMessagesRef.current)}
+        {/* {user.userType==="user" && Object.keys(prevMessagesRef.current).length !== 0 ? ( */}
+        {user.userType==="user"? (
           <div className="mt-auto">
-            {Object.keys(prevMessages).map((date) => (
+            {Object.keys(prevMessagesRef.current).map((date) => (
               <div key={date}>
                 <div className="text-center my-3">
   <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
     {date}
   </div>
 </div>
-                {prevMessages[date].map((obj, index) =>
+                {console.log("okok we ",{date})}
+                {prevMessagesRef.current[date].map((obj, index) =>                 
                   obj.senderId === host ? (
                     <div
                       key={index}
