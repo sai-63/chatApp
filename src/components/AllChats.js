@@ -7,7 +7,7 @@ import { NavLink } from "react-router-dom";
 import {Button,Icons}from 'react-bootstrap';
 import { UserContext } from './UserContext';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson,isgrp,showIsGrp,isuser,showIsUser,grpmsgs,setGrpMsgs}) {
+function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson,grpmsgs,setGrpMsgs}) {
   let [host, setHost] = useState("");
   let [showModal, setShowModal] = useState(false);
   let [userids, setUserId] = useState([]);
@@ -15,6 +15,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
   let [state,setState] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const { user, setUser } = useContext(UserContext);
+  // const [receiver,setReceiverId]=useContext(UserContext);
 
   //GRoups CoDe
   let [usergroups,setUserGroups]=useState([]);
@@ -95,8 +96,8 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
 
   const showChat = (obj) => {
     setUser({ ...user, userType: "user" });
-    showIsUser(true);
-    showIsGrp(false);
+    localStorage.setItem("receiver",obj.id)
+    // setReceiverId(obj.id)
     console.log("Object Id ----------:  ",host,"  ",obj.id)
     const data={
       userId:host,
@@ -116,8 +117,8 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
   //Group Chat setting function
   const groupChat=(gobj)=>{
     setUser({ ...user, userType: "group" });
-    showIsGrp(true);
-    showIsUser(false);
+    // setReceiverId(gobj.id)
+    localStorage.setItem("receiver",gobj.id)
     showGrpPerson(gobj);
     axios
       .get("http://localhost:5290/Chat/Getgroupid",{params:{ggname:gobj.name}})
@@ -266,7 +267,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
             obj.id !== host && (
               <>
                 <NavLink
-                  onClick={() => {showChat(obj);showIsUser(true);showIsGrp(false);}}
+                  onClick={() => {showChat(obj);}}
                   className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link"
                 >
                   <p className="lead ms-2 text-white fs-4 d-inline"> {obj.username} </p>
@@ -284,7 +285,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
         <div key={group.name} className="mt-3 d-flex justify-content-between align-items-center">
 
           <div>
-            <NavLink onClick={()=> {showIsUser(false);showIsGrp(true);groupChat(group);setWhatGrp(group.name);} } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">
+            <NavLink onClick={()=> {groupChat(group);setWhatGrp(group.name);} } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">
               <p className="lead ms-2 text-white fs-4 d-inline"> {group.name} </p>              
             </NavLink>            
           </div>

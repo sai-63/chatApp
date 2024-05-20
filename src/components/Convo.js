@@ -62,7 +62,7 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
         });
     }
 
-    if (user.userType === "group" && finalmsg.length!==0) {
+    if (user.userType === "group") {
       console.log("Entered convo and group have ",finalmsg);
       axios
         .get(`http://localhost:5290/Chat/GetGroupMessages?groupname=${grpperson.name}`)
@@ -72,7 +72,10 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
         });
     }
   }, [person, grpperson, user.userType]);
+
+//New code
   useEffect(() => {
+    console.log("Going to change",finalmsg)
     const newMessagesByDate = {};
     finalmsg.forEach((msg) => {
       console.log(msg);
@@ -83,7 +86,21 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
       newMessagesByDate[date].push(msg);
     });
     setMessagesByDate(newMessagesByDate);
-  },[finalmsg]);
+    console.log("changed",messagesByDate)
+  }, [finalmsg]);
+
+
+//   useEffect(()=>{
+//     finalmsg.forEach((msg) => {
+//   const date = new Date(msg.timestamp).toLocaleDateString();
+//   if (!messagesByDate[date]) {
+//     messagesByDate[date] = [];
+//   }
+//   messagesByDate[date].push(msg);
+//   });
+// },[finalmsg])
+
+
   // useEffect(() => {    
   //   if(isuser&&!isgrp){      
   //     console.log("The big person Object",person);      

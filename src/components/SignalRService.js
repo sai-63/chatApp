@@ -11,11 +11,10 @@ class SignalRService {
     this.receiver = null;
     this.gid=null;
   }
-
   startConnection() {
     //console.log("For testing we have grpperson as",localStorage.getItem(grpperson))
     this.userId = localStorage.getItem("userId");
-    this.receiver = localStorage.getItem("reciever");
+    this.receiver = localStorage.getItem("receiver");
     this.gid=localStorage.getItem("groupid")
     console.log("Out User connected:",this.userId," Reciever is:",this.receiver,"Group id",this.gid);
     if (!this.isConnected) {
@@ -43,7 +42,7 @@ class SignalRService {
         });
 
       this.connection.on("ReceiveMessage", (user,chat) => {
-        console.log(`${chat.senderId}: ${chat.message}`,this.receiver);
+        console.log(`${chat.senderId}: ${chat.message}`,this.receiver,localStorage.getItem("reciever"));
         if(this.receiver === user || this.userId === user){
         if (this.receiveMessageCallback) {
           this.receiveMessageCallback(chat);
@@ -53,7 +52,7 @@ class SignalRService {
       this.connection.on("ReceiveGrpMessage", (user,group) => {
         console.log("We got user grp from signalr rotation as :",user,group)
         console.log(`${group.senderId}: ${group.message}`,this.gid);
-        if(this.gid === localStorage.getItem("groupid")){
+        if(this.gid === user){
         if (this.receiveGroupMessageCallback) {
           this.receiveGroupMessageCallback(group);
         }}

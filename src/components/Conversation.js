@@ -11,7 +11,7 @@ function Conversation({ setShow, setMessage, person, showPerson ,grpperson,showG
   return (
     <>
       <Header person={person} showPerson={showPerson} setSearch={setSearch} 
-      grpperson={grpperson} showGrpPerson={showGrpPerson} isuser={isuser} showIsUser={showIsUser} isgrp={isgrp} showIsGrp={showIsGrp} />
+      grpperson={grpperson} showGrpPerson={showGrpPerson} />
       <Convo
         person={person}
         setShow={setShow}
@@ -24,10 +24,6 @@ function Conversation({ setShow, setMessage, person, showPerson ,grpperson,showG
         showGrpPerson={showGrpPerson}
         finalmsg={finalmsg}
         setFinalMsg={setFinalMsg}
-        isuser={isuser}
-        showIsUser={showIsUser}
-        isgrp={isgrp}
-        showIsGrp={showIsGrp}
       />
       <Footer person={person} grpperson={grpperson} prevMessages={prevMessages} setPrevMessages={setPrevMessages} finalmsg={finalmsg} setFinalMsg={setFinalMsg}/>
     </>

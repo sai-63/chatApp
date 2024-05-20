@@ -8,15 +8,10 @@ import { UserProvider } from "./UserContext";
 
 function Chat() {
   let [person, showPerson] = useState({});
+  let [grpperson,showGrpPerson]=useState({});
   const navigate = useNavigate();
   let [show, setShow] = useState(false);
-  let [message, setMessage] = useState("");
-
-  //To check it is user or group
-  let [isuser,showIsUser]=useState(true);
-  let [isgrp,showIsGrp]=useState(true);  
-  //To get group object
-  let [grpperson,showGrpPerson]=useState({});
+  let [message, setMessage] = useState("");  
 
   return (
     <div className="web dark row flex-grow-1 m-0 mt-3" style={{ position: "relative" }}>
@@ -32,12 +27,7 @@ function Chat() {
           message={message}
           setMessage={setMessage}
           showPerson={showPerson}
-
           showGrpPerson={showGrpPerson}
-          isgrp={isgrp}
-          showIsGrp={showIsGrp}
-          isuser={isuser}
-          showIsUser={showIsUser}
         />
       </div>
 
@@ -53,13 +43,8 @@ function Chat() {
             setMessage={setMessage}
             person={person}
             showPerson={showPerson}
-
             grpperson={grpperson}
             showGrpPerson={showGrpPerson}
-            isuser={isuser}
-            showIsUser={showIsUser}
-            isgrp={isgrp}
-            showIsGrp={showIsGrp}
           />
         ) : (
           <EmptyChat />

@@ -1,6 +1,6 @@
 import axios from "axios";
 import EmojiPicker from "emoji-picker-react";
-import React, { createElement, useContext, useEffect, useState } from "react";
+import React, { createElement, useEffect, useState ,useContext} from "react";
 import { Button, OverlayTrigger, Popover } from "react-bootstrap";
 import Spinner from "react-bootstrap/Spinner";
 import { useForm } from "react-hook-form";
@@ -11,7 +11,8 @@ import { GrAttachment } from "react-icons/gr";
 import socket from "./socket";
 import SignalRService from './SignalRService';
 import { UserContext } from "./UserContext";
-function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , setPrevMessages,finalmsg,setFinalMsg}) {
+
+function Footer({ person ,grpperson,messageObj, setMessageObj, prevMessages , setPrevMessages,finalmsg,setFinalMsg}) {
   let { handleSubmit } = useForm();
   let [host, setHost] = useState("");
   let [receiver,setReciever] = useState("");
@@ -26,13 +27,13 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
   const { user, setUser } = useContext(UserContext);
   
   useEffect(()=>{
-    localStorage.setItem("reciever",person.id);
+    if(person.id!=null){
+      localStorage.setItem("reciever",person.id);
+    }else{
+      localStorage.setItem("reciever",grpperson.id);
+    }
     startConnection();
   },[person]);
-  useEffect(()=>{
-    localStorage.setItem("reciever",grpperson.id);
-    startConnection();
-  },[grpperson]);
 
   useEffect(() => {
     SignalRService.setReceiveMessageCallback((chat) => {
@@ -44,24 +45,28 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
         } else {
           updatedMessages[chatDate] = [chat]; // Create a new list for the date if it doesn't exist
         }
+        console.log("gone till setrec",updatedMessages)
         return updatedMessages;
       });
     });
   }, []);
+
   useEffect(() => {
     SignalRService.setReceiveGroupMessageCallback((group) => {
       const chatDate = new Date(group.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
       setFinalMsg(finalmsg => {
-        const updatedMessages = { ...finalmsg };
-        if (updatedMessages[chatDate]) {
-          updatedMessages[chatDate].push(group); // Append chat to existing date's messages
+        const updatedGrpMessages = { ...finalmsg };
+        if (updatedGrpMessages[chatDate]) {
+          updatedGrpMessages[chatDate].push(group); // Append chat to existing date's messages
         } else {
-          updatedMessages[chatDate] = [group]; // Create a new list for the date if it doesn't exist
+          updatedGrpMessages[chatDate] = [group]; // Create a new list for the date if it doesn't exist
         }
-        return updatedMessages;
+        console.log("gone till setrec",updatedGrpMessages)
+        return updatedGrpMessages;
       });
     });
   }, []);
+
   
   // useEffect(() => {
   //   SignalRService.setRemoveMessageCallback((id) => {
@@ -92,35 +97,34 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
         var r = Math.random() * 16 | 0,
             v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
-    });
-  }
-  function ggenerateUUID() {
-    // Generate a random UUID
-    return 'xxxxxx-xxxx-xxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0;
-        return r.toString(16);
-    });
-  }
+    });    
+}
+function ggenerateUUID() {
+  // Generate a random UUID
+  return 'xxxxxx-xxxx-xxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0;
+      return r.toString(16);
+  });
+}
 
-  function submitMessage() {    
+  function submitMessage() {
     setSpin(true);
-    value = value.trimStart();    
+    value = value.trimStart();
     if(user.userType==="user"){
-      const messageId = generateUUID();
-      data = {
+    const messageId = generateUUID();
+    data = {
       messageId:messageId,
       senderId:host,
       receiverId:person.id,
       message: value,
       timestamp: new Date().toISOString()
-      }
+    }
     if (value.length!==0) {
       axios.post('http://localhost:5290/Chat/Send Message', data)
         .then((res) => {
           setValue("");
           setSpin(false);
           alert('Message successfully sent');
-          console.log("msg sent success")
           console.log(res.data);
           console.log(host);
           setPrevMessages([...prevMessages, data]);
@@ -135,8 +139,8 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
       // SignalRService.sendMessage(host, data, host);
       SignalRService.sendMessage(host, data, person.id); // Send message via SignalR
     }
-  }else{
-    console.log("Entered sendgrpmsgs hoho")
+    }else{
+      console.log("Entered sendgrpmsgs hoho")
     const messageId = ggenerateUUID();
     dataa = {
       senderId:host,
@@ -164,22 +168,22 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
       console.log("Grpperson id:",grpperson.id);
       // SignalRService.sendMessage(host, data, host);
       SignalRService.sendMessageToGroup(localStorage.getItem("groupid"),host, dataa); // Send message via SignalR
+
     }
   }
+    
   }
 
-  // useEffect(()=>{
-  //   console.log("Prev messages changed in footer :",prevMessages);
-  //   console.log("Final messages in footer : ",finalmsg);
-  // },[prevMessages,finalmsg]);
-  
+  useEffect(()=>{
+    // console.log("Prev messages changed in footer :",prevMessages);
+  },[prevMessages]);
 
   const handleMessageChange = (event) => {
     setMessage(event.target.value);
   };
 
   const handleUserChange = (event) => {
-    setUser(event.target.value);
+    setUserr(event.target.value);
   };
   function handleChange(event) {
     setValue(event.target.value);
@@ -244,13 +248,6 @@ function Footer({ person,grpperson ,messageObj, setMessageObj, prevMessages , se
     setDisabled(false);
   }
 
-
-  
-
-
-  
-
-  
   return (
     <form
       className="footer d-flex align-items-center justify-content-center bg-dark bg-opacity-10"

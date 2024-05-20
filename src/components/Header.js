@@ -6,25 +6,12 @@ import { FiMoreVertical } from "react-icons/fi";
 import socket from "./socket";
 import { useEffect } from "react";
 import { UserContext } from "./UserContext";
-function Header({ person, showPerson, setSearch,grpperson,showGrpPerson,isuser,showIsUser,isgrp,showIsGrp }) {
+function Header({ person, showPerson, setSearch,grpperson,showGrpPerson}) {
   const [iconActive, setIconActive] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typing, setTyping] = useState(null);
   const [host, setHost] = useState("");
   const { user, setUser } = useContext(UserContext);
-
-  
-  //For checking the values of isuser and isgrp 
-  useEffect(()=>{
-    console.log("At first header we have isuser and isgrp as  ",isuser,isgrp)
-  },[])
-
-  //To change the header value acc to isuer and isgrp
-  let [fstate,setFState]=useState(true);
-  // useEffect(()=>{
-  //   setFState(!fstate)
-  //   console.log("In heade we have isuser isgrp for 1st as",isgrp,isuser);
-  // },[isuser,isgrp])
 
   // socket.on("allusers", (allUsers) => {
   //   setOnlineUsers(allUsers);
@@ -60,8 +47,6 @@ function Header({ person, showPerson, setSearch,grpperson,showGrpPerson,isuser,s
           className=""
           style={{ cursor: "pointer" }}
         />
-        {/* {console.log("super man we have isgrp and grpperson  ",isgrp,grpperson)}
-        {console.log("super man we have isuser and person",isuser,person)} */}
         {console.log("Using usecontext",user)}
         <div className="ms-4 p-0">
           <span className="fs-5 p-0 m-0">          
