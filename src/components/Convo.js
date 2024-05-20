@@ -62,7 +62,7 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
         });
     }
 
-    if (user.userType === "group") {
+    if (user.userType === "group" && finalmsg.length!==0) {
       console.log("Entered convo and group have ",finalmsg);
       axios
         .get(`http://localhost:5290/Chat/GetGroupMessages?groupname=${grpperson.name}`)
@@ -72,15 +72,18 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
         });
     }
   }, [person, grpperson, user.userType]);
-//   useEffect(()=>{
-//     finalmsg.forEach((msg) => {
-//   const date = new Date(msg.timestamp).toLocaleDateString();
-//   if (!messagesByDate[date]) {
-//     messagesByDate[date] = [];
-//   }
-//   messagesByDate[date].push(msg);
-//   });
-// },[finalmsg])
+  useEffect(() => {
+    const newMessagesByDate = {};
+    finalmsg.forEach((msg) => {
+      console.log(msg);
+      const date = new Date(msg.timestamp).toLocaleDateString();
+      if (!newMessagesByDate[date]) {
+        newMessagesByDate[date] = [];
+      }
+      newMessagesByDate[date].push(msg);
+    });
+    setMessagesByDate(newMessagesByDate);
+  },[finalmsg]);
   // useEffect(() => {    
   //   if(isuser&&!isgrp){      
   //     console.log("The big person Object",person);      
@@ -411,14 +414,14 @@ return milliseconds;
           </div>
 
         ) :(<div className="mt-auto">
-        {Object.keys(finalmsg).map((date) => (
+        {Object.keys(messagesByDate).map((date) => (
           <div key={date}>
             <div className="text-center my-3">
 <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
 {date}
 </div>
 </div>
-            {finalmsg[date].map((obj, index) =>
+            {messagesByDate[date].map((obj, index) =>
               obj.senderId === host ? (
                 <div
                   key={index}

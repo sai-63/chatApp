@@ -7,7 +7,7 @@ import { set } from "react-hook-form";
 function Conversation({ setShow, setMessage, person, showPerson ,grpperson,showGrpPerson,isuser,showIsUser,isgrp,showIsGrp,grpmsgs,setGrpMsgs}) {
   const [search, setSearch] = useState("");
   const [prevMessages, setPrevMessages] = useState([]);
-  const {finalmsg,setFinalMsg}=useState({});
+  const [finalmsg,setFinalMsg]=useState([]);
   return (
     <>
       <Header person={person} showPerson={showPerson} setSearch={setSearch} 
