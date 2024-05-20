@@ -41,16 +41,7 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
   }  
   // useEffect(()=>{
   //   setMessagesByDate({});
-  // },[messagesByDate]);
-  useEffect(()=>{
-    finalmsg.forEach((msg) => {
-  const date = new Date(msg.timestamp).toLocaleDateString();
-  if (!messagesByDate[date]) {
-    messagesByDate[date] = [];
-  }
-  messagesByDate[date].push(msg);
-  });
-},[finalmsg])
+  // },[messagesByDate]);  
   const scrollRef = useRef(null);
 
   function scrollDown() {
@@ -81,24 +72,15 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
         });
     }
   }, [person, grpperson, user.userType]);
-  // if(user.userType==="user"){
-  //   console.log("Entered convo and user have ",prevMessages);
-  //   axios
-  //   .get("http://localhost:5290/Chat/GetMessagesSenderIdUserId?senderId="+localStorage.getItem("userId")+"&receiverId="+person.id)
-  //   // .get("http://localhost:5290/Chat/GetMessagesSenderIdUserId",{params:{senderId:localStorage.getItem("senderId"),receiverId:person.id}})
-  //   .then((response) => {
-  //     setPrevMessages(response.data)
-  //   })
-  // }
-  // if(user.userType==="group"){
-  //   console.log("Entered convo have group as ",finalmsg)
-  //   axios
-  //     .get("http://localhost:5290/Chat/GetGroupMessages?groupname="+grpperson.name)
-  //       // .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:grpperson.name}})
-  //     .then((res)=>{
-  //       setFinalMsg(res.data)
-  //   })
-  // }
+//   useEffect(()=>{
+//     finalmsg.forEach((msg) => {
+//   const date = new Date(msg.timestamp).toLocaleDateString();
+//   if (!messagesByDate[date]) {
+//     messagesByDate[date] = [];
+//   }
+//   messagesByDate[date].push(msg);
+//   });
+// },[finalmsg])
   // useEffect(() => {    
   //   if(isuser&&!isgrp){      
   //     console.log("The big person Object",person);      
@@ -151,17 +133,17 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
   //   }
   // },[grpperson,isgrp,host])
   
-  //Display final messages 
-  // useEffect(()=>{
-  //   console.log("prevmsgs changed")
-  //   console.log("After calling useeffect and api we got user as ",prevMessages)
-  //   console.log("After calling useeffect and api we got group as ",finalmsg)
-  // },[prevMessages])
-  // useEffect(()=>{
-  //   console.log("finalmsg changed")
-  //   console.log("After calling useeffect and api we got user as ",prevMessages)
-  //   console.log("After calling useeffect and api we got group as ",finalmsg)
-  // },[finalmsg])
+  ///Display final messages 
+  useEffect(()=>{
+    console.log("prevmsgs changed")
+    console.log("After calling useeffect and api we got user as ",prevMessages)
+    console.log("After calling useeffect and api we got group as ",finalmsg)
+  },[prevMessages])
+  useEffect(()=>{
+    console.log("finalmsg changed")
+    console.log("After calling useeffect and api we got user as ",prevMessages)
+    console.log("After calling useeffect and api we got group as ",finalmsg)
+  },[finalmsg])
 
   useEffect(() => {
     SignalRService.setRemoveMessageCallback((id, chatDate) => {
@@ -182,9 +164,9 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
   }, []);
 
 
-  // useEffect(() => {
-  //   setIsLoaded(true);
-  // }, [person,grpperson]);
+  useEffect(() => {
+    setIsLoaded(true);
+  }, [person,grpperson]);
 
   useEffect(() => {
     scrollDown();
@@ -280,7 +262,7 @@ return milliseconds;
         ref={scrollRef}
         className="d-flex flex-column overflow-auto pb-2 bg-light h-100"
       >
-        {console.log("In printing we have prev and final as",prevMessages,finalmsg,user.userType)}
+        {console.log("In printing we have prev and final as",prevMessages,finalmsg,user.userType,messagesByDate)}
         {/* {user.userType==="user" && Object.keys(prevMessagesRef.current).length !== 0 ? ( */}
         {user.userType==="user"? (
           <div className="mt-auto">
@@ -429,14 +411,14 @@ return milliseconds;
           </div>
 
         ) :(<div className="mt-auto">
-        {Object.keys(messagesByDate).map((date) => (
+        {Object.keys(finalmsg).map((date) => (
           <div key={date}>
             <div className="text-center my-3">
 <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
 {date}
 </div>
 </div>
-            {messagesByDate[date].map((obj, index) =>
+            {finalmsg[date].map((obj, index) =>
               obj.senderId === host ? (
                 <div
                   key={index}
