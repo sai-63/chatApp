@@ -72,6 +72,22 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
         });
     }
   }, [person, grpperson, user.userType]);
+
+//New code
+  useEffect(() => {
+    const newMessagesByDate = {};
+    finalmsg.forEach((msg) => {
+      console.log(msg);
+      const date = new Date(msg.timestamp).toLocaleDateString();
+      if (!newMessagesByDate[date]) {
+        newMessagesByDate[date] = [];
+      }
+      newMessagesByDate[date].push(msg);
+    });
+    setMessagesByDate(newMessagesByDate);
+  }, [finalmsg]);
+
+
 //   useEffect(()=>{
 //     finalmsg.forEach((msg) => {
 //   const date = new Date(msg.timestamp).toLocaleDateString();
@@ -81,6 +97,8 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
 //   messagesByDate[date].push(msg);
 //   });
 // },[finalmsg])
+
+
   // useEffect(() => {    
   //   if(isuser&&!isgrp){      
   //     console.log("The big person Object",person);      
@@ -411,14 +429,14 @@ return milliseconds;
           </div>
 
         ) :(<div className="mt-auto">
-        {Object.keys(finalmsg).map((date) => (
+        {Object.keys(messagesByDate).map((date) => (
           <div key={date}>
             <div className="text-center my-3">
 <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
 {date}
 </div>
 </div>
-            {finalmsg[date].map((obj, index) =>
+            {messagesByDate[date].map((obj, index) =>
               obj.senderId === host ? (
                 <div
                   key={index}
