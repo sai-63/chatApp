@@ -78,14 +78,18 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
     console.log("Going to change",finalmsg)
     const newMessagesByDate = {};
     finalmsg.forEach((msg) => {
-      console.log(msg);
-      const date = new Date(msg.timestamp).toLocaleDateString();
+      console.log("each one it gets is ",msg);
+      // const date = new Date(msg.timestamp).toLocaleDateString();
+      const date = new Date(msg.timestamp).toISOString().split('T')[0]
       if (!newMessagesByDate[date]) {
         newMessagesByDate[date] = [];
       }
       newMessagesByDate[date].push(msg);
     });
     setMessagesByDate(newMessagesByDate);
+  // }else{
+  //   console.log("Not wrkng")
+  // }
     console.log("changed",messagesByDate)
   }, [finalmsg]);
 
@@ -154,15 +158,11 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
   // },[grpperson,isgrp,host])
   
   ///Display final messages 
-  useEffect(()=>{
-    console.log("prevmsgs changed")
-    console.log("After calling useeffect and api we got user as ",prevMessages)
-    console.log("After calling useeffect and api we got group as ",finalmsg)
-  },[prevMessages])
+
   useEffect(()=>{
     console.log("finalmsg changed")
     console.log("After calling useeffect and api we got user as ",prevMessages)
-    console.log("After calling useeffect and api we got group as ",finalmsg)
+    console.log("After calling useeffect and api we got group as ",finalmsg,messagesByDate)
   },[finalmsg])
 
   useEffect(() => {
@@ -283,7 +283,6 @@ return milliseconds;
         className="d-flex flex-column overflow-auto pb-2 bg-light h-100"
       >
         {console.log("In printing we have prev and final as",prevMessages,finalmsg,user.userType,messagesByDate)}
-        {/* {user.userType==="user" && Object.keys(prevMessagesRef.current).length !== 0 ? ( */}
         {user.userType==="user"? (
           <div className="mt-auto">
             {Object.keys(prevMessages).map((date) => (
@@ -293,7 +292,6 @@ return milliseconds;
     {date}
   </div>
 </div>
-                {console.log("okok we ",{date})}
                 {prevMessages[date].map((obj, index) =>                 
                   obj.senderId === host ? (
                     <div

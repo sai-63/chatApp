@@ -42,6 +42,7 @@ class SignalRService {
         });
 
       this.connection.on("ReceiveMessage", (user,chat) => {
+        console.log("na family safe")
         console.log(`${chat.senderId}: ${chat.message}`,this.receiver,localStorage.getItem("reciever"));
         if(this.receiver === user || this.userId === user){
         if (this.receiveMessageCallback) {
@@ -49,13 +50,13 @@ class SignalRService {
         }}
       });
 
-      this.connection.on("ReceiveGrpMessage", (user,group) => {
-        console.log("We got user grp from signalr rotation as :",user,group)
-        console.log(`${group.senderId}: ${group.message}`,this.gid);
-        if(this.gid === user){
+      this.connection.on("ReceiveGrpMessage", (user,groupmsg) => {
+        console.log("na family safe")
+        console.log("We got user grp from signalr rotation as :",user,groupmsg)
+        console.log(`${groupmsg.senderId}: ${groupmsg.message}`,this.gid);
         if (this.receiveGroupMessageCallback) {
-          this.receiveGroupMessageCallback(group);
-        }}
+          this.receiveGroupMessageCallback(groupmsg);
+        }
       });
 
       this.connection.on("MessageRemoved", (messageId,chatDate) => {
@@ -99,9 +100,7 @@ class SignalRService {
     }
   }
   setReceiveGroupMessageCallback(callback) {
-    if (!this.receiveGroupMessageCallback) {
       this.receiveGroupMessageCallback = callback;
-    }
   }
 
   setRemoveMessageCallback(callback){
@@ -114,17 +113,20 @@ class SignalRService {
   //Group Chat SignalR
   // Join a group (add this where appropriate)
   joinGroup(groupName) {
-    this.connection.invoke("JoinGroup", groupName);
+    if (this.connection) {
+      this.connection.invoke("JoinGroup", groupName)
+          .catch(err => console.error("Error joining group:", err.toString()));
+    }
   }
 
   // Send message to group
   sendMessageToGroup(groupid,userId,dataa) {
     if (this.connection) {
+      // console.log("Sending the det from signalr",groupid, userId, dataa)
       this.connection.invoke("SendToGroup", groupid, userId, dataa)
-      .catch(err => console.error(err.toString()));
-    }else{
-      console.error("SignalR connection is not established.");
+        .catch(err => console.error(err.toString()));
     }
+    console.error("SignalR connection is not established.");
   }
 
   // Remove message from group
