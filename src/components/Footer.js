@@ -44,21 +44,55 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
   function submitMessage() {
     setSpin(true);
     value = value.trimStart();
-    const data = {
+    /*const data = {
       senderId:host,
       receiverId:person.id,
       message: value,
       timestamp: Date.now()
+    }*/
+    //console.log(data);
+    const formData = new FormData();
+    formData.append('SenderId',host);
+    formData.append('ReceiverId',person.id);
+    formData.append('Message',value);
+    /*formData.append('FileName',"");
+  formData.append('FileType',"");
+  formData.append('FileContent',"");
+  formData.append('FileSize',"");
+  formData.append('Timestamp',Date.now());*/
+    
+    console.log(host)
+    console.log(person.id)
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ', ' + pair[1]); 
+    }
+
+    if (file!==null) {
+      formData.append("File",file);
     }
     if (value.length!==0) {
-      axios.post('http://localhost:5290/Chat/Send Message', data)
+      axios.post('http://localhost:5290/Chat/Send Message',  formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
         .then((res) => {
           setValue("");
           setSpin(false);
           alert('Message successfully sent');
           console.log(res.data);
           console.log(host);
-          setPrevMessages([...prevMessages, data]);
+          setPrevMessages([
+            ...prevMessages,res.data
+           // {
+             // senderId: host,
+              //receiverId: person.id,
+              //message: value,
+              //fileName: file ? file.name : null,
+              // Add other file details if needed
+            //},
+          ]);
+          //setPrevMessages([...prevMessages, data]);
           // console.log(prevMessages,data);
           // console.log([...prevMessages,data])
           // console.log("Prev in footer",prevMessages);
@@ -96,7 +130,7 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
     setValue(event.target.files[0].name);
     setDisabled(true);
   }
-  /*function submitFile() {
+  function submitFile() {
     let obj = {};
     setSpin(true);
 
@@ -126,7 +160,7 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
         socket.emit("message-sent", socketObj);
       })
       .catch((err) => console.log(err.message));
-  }*/
+  }
 
   function cancelFile() {
     setValue("");
@@ -166,7 +200,7 @@ function Footer({ person ,prevMessages , setPrevMessages}) {
           rootClose={true}
           overlay={
             <Popover className="d-block">
-              <input type="file" />
+              <input type="file" onInput={handleFile} />
             </Popover>
           }
         >

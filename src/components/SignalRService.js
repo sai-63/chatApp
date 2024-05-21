@@ -47,7 +47,7 @@ class SignalRService {
     }
   }
 
-  sendMessage(user, message, receiverId = null) {
+  sendMessage(user, message, receiverId = null,file=null) {
     if (this.connection) {
       if (receiverId) {
         this.connection.invoke("SendToUser", this.userId, receiverId, message)

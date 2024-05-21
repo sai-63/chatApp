@@ -37,6 +37,46 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }
+  const handleDownload = async (obj) => {
+    try {
+      // Set downloading state to true to indicate that download is in progress
+      //setDownloading(true);
+
+      // Make a request to the backend to download the file content
+      // const response = await axios.get('http://localhost:5290/Chat/DownloadFile', {
+      //   params: obj, // Pass the entire message object as query parameters
+      //   responseType: 'blob' // Set response type to blob to handle file download
+      // });
+      const response = await axios.post('http://localhost:5290/Chat/DownloadFile', obj, {
+        responseType: 'blob' // Set response type to blob to handle file download
+      });
+  
+      // Determine content type from response headers
+      const contentType = response.headers['content-type'];
+  
+      // Create a URL for the blob and create a link to trigger download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', obj.fileName); // Set file name
+  
+      // If content type is known, set it for the downloaded file
+      if (contentType) {
+        link.setAttribute('type', contentType);
+      }
+  
+      document.body.appendChild(link);
+      link.click();
+
+      // Reset downloading state after successful download
+     // setDownloading(false);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      // Handle error
+      // Reset downloading state
+      //setDownloading(false);
+    }
+  };
 
   useEffect(() => {
 
@@ -107,7 +147,7 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
                     className="d-inline-block ms-auto fs-6 lead m-0 bg-success pt-1 pb-1 rounded text-white"
                     style={{ position: "relative" }}
                   >
-                    {obj.message ? (
+                    {obj.fileName===null ? (
                       <div
                         className="d-flex flex-wrap ms-2 me-2 mt-1"
                         style={{ position: "relative" }}
@@ -203,7 +243,17 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
                                 }}
                               />
                             )}
-                            
+                            <IoMdDownload
+                              onClick={() => handleDownload(obj)}
+                              className="fs-3 text-dark"
+                              style={{
+                                position: "absolute",
+                                bottom: "1rem",
+                                left: "0",
+                                borderRadius: "50%",
+                                cursor: "pointer",
+                              }}
+                            />
                           </div>): null }
                           <div className="ms-1">{obj.fileName}</div>
                         </div>
