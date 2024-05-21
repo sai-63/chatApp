@@ -53,16 +53,16 @@ function Footer({ person ,grpperson,messageObj, setMessageObj, prevMessages , se
 
   useEffect(() => {
     SignalRService.setReceiveGroupMessageCallback((group) => {
-      console.log("Entered grp setrece ",group)
+      console.log("Entered grp setrece ",group,finalmsg)
       const chatDate = new Date(group.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
       setFinalMsg((finalmsg) => {
-        const updatedGrpMessages = { ...finalmsg };
+        const updatedGrpMessages = [ ...finalmsg ];
         if (updatedGrpMessages[chatDate]) {
           updatedGrpMessages[chatDate].push(group); // Append chat to existing date's messages
         } else {
           updatedGrpMessages[chatDate] = [group]; // Create a new list for the date if it doesn't exist
         }
-        console.log("gone till setrec",group,updatedGrpMessages)
+        console.log("gone till setrec",group,updatedGrpMessages,finalmsg)
         return updatedGrpMessages;
       });
     });
@@ -144,11 +144,11 @@ function ggenerateUUID() {
       console.log("Entered sendgrpmsgs hoho")
     const messageId = ggenerateUUID();
     dataa = {
-      // _id:messageId,
+      _id:messageId,
       senderId:host,
       message: value,
       // Timestamp: new Date().toISOString()
-      Timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString()
       //const date = new Date(msg.timestamp).toLocaleDateString();
       }
     if (value.length!==0) {
@@ -161,30 +161,30 @@ function ggenerateUUID() {
           alert('Grp Message successfully sent');
           console.log(res.data);
           console.log(host);
-          setFinalMsg((finalmsg) => {
-            const chatDate = new Date(dataa.Timestamp).toISOString().split('T')[0];
-            const updatedGrpMessages = { ...finalmsg };
-            if (updatedGrpMessages[chatDate]) {
-              updatedGrpMessages[chatDate].push(dataa);
-            } else {
-              updatedGrpMessages[chatDate] = [dataa];
-            }
-            return updatedGrpMessages;
-          });
-        })
-          //setFinalMsg([...finalmsg, dataa]);
+        //   setFinalMsg((finalmsg) => {
+        //     const chatDate = new Date(dataa.Timestamp).toISOString().split('T')[0];
+        //     const updatedGrpMessages = { ...finalmsg };
+        //     if (updatedGrpMessages[chatDate]) {
+        //       updatedGrpMessages[chatDate].push(dataa);
+        //     } else {
+        //       updatedGrpMessages[chatDate] = [dataa];
+        //     }
+        //     return updatedGrpMessages;
+        //   });
+        // })
+        setFinalMsg((finalmsg)=>[...finalmsg, dataa]);
+      })
+    }
           // console.log(prevMessages,data);
           // console.log([...prevMessages,data])
           // console.log("Prev in footer",prevMessages);
-        .catch((error) => {
-          console.log(error);
-        })
+        // .catch((error) => {
+        //   console.log(error);
+        // })
       console.log("Grpperson id:",grpperson.id);
       // SignalRService.sendMessage(host, data, host);
       console.log("sending to bakend",localStorage.getItem("groupid"),host, dataa,finalmsg)
       SignalRService.sendMessageToGroup(localStorage.getItem("groupid"),host, dataa); // Send message via SignalR
-
-    }
   }
     
   }

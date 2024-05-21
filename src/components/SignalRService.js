@@ -51,7 +51,7 @@ class SignalRService {
       });
 
       this.connection.on("ReceiveGrpMessage", (user,groupmsg) => {
-        console.log("na family safe")
+        console.log("na family safe group")
         console.log("We got user grp from signalr rotation as :",user,groupmsg)
         console.log(`${groupmsg.senderId}: ${groupmsg.message}`,this.gid);
         if (this.receiveGroupMessageCallback) {
@@ -125,8 +125,9 @@ class SignalRService {
       // console.log("Sending the det from signalr",groupid, userId, dataa)
       this.connection.invoke("SendToGroup", groupid, userId, dataa)
         .catch(err => console.error(err.toString()));
-    }
+    }else{      
     console.error("SignalR connection is not established.");
+    }
   }
 
   // Remove message from group
