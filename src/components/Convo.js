@@ -71,14 +71,13 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
           setIsLoaded(false)
         });
     }
-  }, [person, grpperson, user.userType]);
+  }, [person, grpperson, user.userType,prevMessages,finalmsg]);
 
-//New code
-  const newMessagesByDate = {};
+//New code  
   useEffect(() => {
-    console.log("Going to change",finalmsg)
-    
+    console.log("Going to change",finalmsg)    
     if(Array.isArray(finalmsg)){
+      const newMessagesByDate = {};
       finalmsg.forEach((msg) => {
       console.log("each one it gets is ",msg);
       // const date = new Date(msg.timestamp).toLocaleDateString();
@@ -92,9 +91,6 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
   }else{
     console.log("oyy not array dude")
   }
-  // }else{
-  //   console.log("Not wrkng")
-  // }
     console.log("changed",messagesByDate)
   }, [finalmsg]);
 

@@ -35,6 +35,11 @@ class SignalRService {
         .then(() => {
           console.log("SignalR connection established.");
           this.isConnected = true;
+
+          // Join the group after the connection is established
+          if (this.gid) {
+            this.joinGroup(this.gid);
+          }
         })
         .catch(err => {
           console.error("Error starting SignalR connection:", err.toString());
