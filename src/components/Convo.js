@@ -38,46 +38,6 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }
-  const handleDownload = async (obj) => {
-    try {
-      // Set downloading state to true to indicate that download is in progress
-      //setDownloading(true);
-
-      // Make a request to the backend to download the file content
-      // const response = await axios.get('http://localhost:5290/Chat/DownloadFile', {
-      //   params: obj, // Pass the entire message object as query parameters
-      //   responseType: 'blob' // Set response type to blob to handle file download
-      // });
-      const response = await axios.post('http://localhost:5290/Chat/DownloadFile', obj, {
-        responseType: 'blob' // Set response type to blob to handle file download
-      });
-  
-      // Determine content type from response headers
-      const contentType = response.headers['content-type'];
-  
-      // Create a URL for the blob and create a link to trigger download
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', obj.fileName); // Set file name
-  
-      // If content type is known, set it for the downloaded file
-      if (contentType) {
-        link.setAttribute('type', contentType);
-      }
-  
-      document.body.appendChild(link);
-      link.click();
-
-      // Reset downloading state after successful download
-     // setDownloading(false);
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      // Handle error
-      // Reset downloading state
-      //setDownloading(false);
-    }
-  };
 
   useEffect(() => {
 

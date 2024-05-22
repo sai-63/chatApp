@@ -87,28 +87,14 @@ function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessa
       timestamp: new Date().toISOString()
     }
     if (value.length!==0) {
-      axios.post('http://localhost:5290/Chat/Send Message',  formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      })
+      axios.post('http://localhost:5290/Chat/Send Message', data)
         .then((res) => {
           setValue("");
           setSpin(false);
           alert('Message successfully sent');
           console.log(res.data);
           console.log(host);
-          setPrevMessages([
-            ...prevMessages,res.data
-           // {
-             // senderId: host,
-              //receiverId: person.id,
-              //message: value,
-              //fileName: file ? file.name : null,
-              // Add other file details if needed
-            //},
-          ]);
-          //setPrevMessages([...prevMessages, data]);
+          setPrevMessages([...prevMessages, data]);
           // console.log(prevMessages,data);
           // console.log([...prevMessages,data])
           // console.log("Prev in footer",prevMessages);
@@ -190,7 +176,7 @@ function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessa
         socket.emit("message-sent", socketObj);
       })
       .catch((err) => console.log(err.message));
-  }
+  }*/
 
   function cancelFile() {
     setValue("");
