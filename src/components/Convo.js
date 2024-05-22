@@ -14,21 +14,31 @@ import {
 import { BsChevronDoubleDown } from "react-icons/bs";
 import { IoMdDownload } from "react-icons/io";
 import { RiArrowDropDownLine } from "react-icons/ri";
-import socket from "./socket";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheckDouble } from '@fortawesome/free-solid-svg-icons';
 import SignalRService from './SignalRService';
 
-function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessages }) {
+function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessages }) {
   let host = localStorage.getItem("userId");
   let [isLoaded, setIsLoaded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [deleteObject, setDeleteObject] = useState({});
+  const [editObject, setEditObject] = useState({});
   const [state, setState] = useState(true);
   const [scroll, setScroll] = useState(false);
+  const [editMessage, setEditMessage] = useState("");
+  const [isRead, setIsRead] = useState(false);
   let delObj = {};
+
+
+  function handleOpen(obj) {
+    setShowModal(true);
+    setEditObject(obj);
+  }
 
   function handleClose() {
     setShowModal(false);
-    setDeleteObject({});
+    setEditObject({});
   }
 
   const scrollRef = useRef(null);
@@ -39,50 +49,165 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
     }
   }
 
+  function startConnection() {
+
+    console.log("HI");
+    SignalRService.startConnection();
+    console.log("Reached");
+  }
+
+  useEffect(() => {
+
+    SignalRService.setReceiveMessageCallback((chat) => {
+      axios.post('http://localhost:5290/Chat/markasread?messageIds',[chat.messageId])
+      const chatDate = new Date(chat.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
+      setPrevMessages(prevMessages => {
+        const updatedMessages = { ...prevMessages };
+        if (updatedMessages[chatDate]) {
+          updatedMessages[chatDate].push(chat); // Append chat to existing date's messages
+        } else {
+          updatedMessages[chatDate] = [chat]; // Create a new list for the date if it doesn't exist
+        }
+        return updatedMessages;
+      });
+    });
+
+    const removeMessage = (date, messageId) => {
+      setPrevMessages(prevMessages => {
+        const updatedMessages = { ...prevMessages };
+        if (updatedMessages[date]) {
+          updatedMessages[date] = updatedMessages[date].filter(message => message.messageId !== messageId);
+          if (updatedMessages[date].length == 0) {
+            delete updatedMessages[date];
+          }
+        }
+        return updatedMessages;
+      });
+    };
+
+    SignalRService.setRemoveMessageCallback((id, chatDate) => {
+      removeMessage(chatDate, id);
+    });
+
+    // Function to update the chat message with matching messageId from a specific date
+    const editMessage = (date, messageId, newMessage) => {
+      setPrevMessages(prevMessages => {
+        const updatedMessages = { ...prevMessages };
+        if (updatedMessages[date]) {
+          updatedMessages[date] = updatedMessages[date].map(message =>
+            message.messageId === messageId ? { ...message, message: newMessage } : message
+          );
+        }
+        return updatedMessages;
+      });
+    };
+
+    SignalRService.setEditMessageCallback((messageId, newMessage, chatDate) => {
+      editMessage(chatDate, messageId, newMessage);
+    });
+
+    const readMessage = (messageIds) => {
+      setPrevMessages(prevMessages => {
+        const updatedMessages = { ...prevMessages };
+        for (const key in updatedMessages) {
+          if (updatedMessages.hasOwnProperty(key)) {
+            const messageList = updatedMessages[key];
+            updatedMessages[key] = messageList.map(message => {
+              if (messageIds.includes(message.messageId)) {
+                return { ...message, isRead: true };
+              }
+              return message;
+            });
+          }
+        }
+        return updatedMessages;
+      });
+    };
+
+    SignalRService.setReadMessageCallback((messageIds) => {
+      readMessage(messageIds);
+    });
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("reciever", person.id);
+    startConnection();
+  }, [person]);
+
+  const handleDownload = async (obj) => {
+    try {
+      const response = await axios.post('http://localhost:5290/Chat/DownloadFile', obj, {
+        responseType: 'blob' // Set response type to blob to handle file download
+      });
+
+      // Determine content type from response headers
+      const contentType = response.headers['content-type'];
+
+      // Create a URL for the blob and create a link to trigger download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', obj.fileName); // Set file name
+
+      // If content type is known, set it for the downloaded file
+      if (contentType) {
+        link.setAttribute('type', contentType);
+      }
+
+      document.body.appendChild(link);
+      link.click();
+
+      // Reset downloading state after successful download
+      // setDownloading(false);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      // Handle error
+      // Reset downloading state
+      //setDownloading(false);
+    }
+  };
+
   useEffect(() => {
 
     let hosting = localStorage.getItem("user");
+    const newMessages = [];
 
-    axios.get("http://localhost:5290/Chat/GetMessagesSenderIdUserId", {params: {senderId: host,receiverId: person.id}})
+    axios.get("http://localhost:5290/Chat/GetMessagesSenderIdUserId", { params: { senderId: host, receiverId: person.id } })
       .then((response) => {
-        console.log(response) 
+        console.log(response)
         console.log(response.data);
         setPrevMessages(response.data);
         setShow(false);
         //setMessage("");
         setIsLoaded(true);
         setScroll(!scroll);
-        setMessage("");
-        console.log(prevMessages);
+        const messages = response.data;
+        for (const key in messages) {
+          if (messages.hasOwnProperty(key)) {
+            const messageList = messages[key];
+            messageList.forEach(message => {
+              if (message.senderId !== host && !message.isRead) {
+                newMessages.push(message.messageId);
+              }
+            });
+          }
+        }
+        axios.post(`http://localhost:5290/Chat/markasread?messageIds`, newMessages)
+          .then((response) => {
+            console.log(response.data)
+          })
+          .catch((err) => console.log(err.message));
+        SignalRService.readMessage(person.id, newMessages);
       })
       .catch((err) => console.log(err.message));
-      
+
   }, [person, search]);
-  
-  
-  useEffect(()=>{
-    setState(!state);
-    // console.log("Prev messages changed in convo:",prevMessages);
-  },[prevMessages])
+
 
   useEffect(() => {
-    SignalRService.setRemoveMessageCallback((id, chatDate) => {
-      // Function to remove the chat with matching messageId from a specific date
-      const removeMessage = (date, messageId) => {
-        setPrevMessages(prevMessages => {
-          const updatedMessages = { ...prevMessages };
-          if (updatedMessages[date]) {
-            updatedMessages[date] = updatedMessages[date].filter(message => message.messageId !== messageId);
-          }
-          return updatedMessages;
-        });
-      };
-  
-      // Call the function to remove the message with the provided id from the specified date
-      removeMessage(chatDate, id);
-    });
-  }, []);
-  
+    setState(!state);
+    // console.log("Prev messages changed in convo:",prevMessages);
+  }, [prevMessages])
 
   useEffect(() => {
     setIsLoaded(true);
@@ -92,11 +217,11 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
     scrollDown();
   }, [scroll]);
 
-  useEffect(()=>{
+  useEffect(() => {
     setDeleteObject(deleteObject)
-  },[deleteObject]);
+  }, [deleteObject]);
 
-  
+
 
   if (!isLoaded) {
     return (
@@ -107,16 +232,16 @@ function Convo({ person, setShow, setMessage, search ,prevMessages ,setPrevMessa
   }
 
   const convertMillisecondsToTime = (milliseconds) => {
-return milliseconds;
+    return milliseconds;
   };
 
-  function handleModal(obj,index) {
-    console.log("index",index);
+  function handleModal(obj, index) {
+    console.log("index", index);
     // setShowModal(true);
-    console.log("Object issssss:",obj);
+    console.log("Object issssss:", obj);
     const chatDate = new Date(obj.timestamp).toISOString().split('T')[0];
     const msgId = obj.messageId;
-    console.log("Obj Msg Id",msgId);
+    console.log("Obj Msg Id", msgId);
     setPrevMessages(prevMessages => {
       const updatedMessages = { ...prevMessages };
       if (updatedMessages[chatDate]) {
@@ -126,7 +251,7 @@ return milliseconds;
     });
     axios
       .post(
-        "http://localhost:5290/Chat/DeleteMessage?id="+msgId
+        "http://localhost:5290/Chat/DeleteMessage?messageId=" + msgId
       )
       .then((res) => {
         console.log(res.data.message);
@@ -138,27 +263,28 @@ return milliseconds;
       .catch((err) => {
         console.log(err.message);
       });
-    SignalRService.removeMessage(person.id,msgId,chatDate);
+    SignalRService.removeMessage(person.id, msgId, chatDate);
   }
 
-  function handleDelete() {
-    console.log(deleteObject.id);
-    // axios
-    //   .post(
-    //     "http://localhost:5290/Chat/DeleteMessage",{objectIdComponents: deleteObject.id}
-    //   )
-    //   .then((res) => {
-    //     setMessage(res.data.message);
-    //     const socketObj = {};
-    //     socketObj.senderId = host;
-    //     socketObj.receiverId = person.userid;
-    //     socket.emit("delete-message", socketObj);
-    //   })
-    //   .catch((err) => {
-    //     setMessage(err.message);
-    //     setDeleteObject({});
-    //   });
-    //   handleClose();
+  function handleEdit() {
+    const chatDate = new Date(editObject.timestamp).toISOString().split('T')[0];
+    const msgId = editObject.messageId;
+    console.log("Edit Obj Msg Id : ", msgId);
+    console.log("New Message is : ", editMessage);
+    setPrevMessages(prevMessages => {
+      const updatedMessages = { ...prevMessages };
+      return updatedMessages;
+    });
+    axios.post(`http://localhost:5290/Chat/EditMessage?messageId=${msgId}&newMessage=${editMessage}`)
+      .then((res) => {
+        console.log(res.data.message);
+      })
+      .catch((err) => {
+        console.log(err.message);
+      });
+    SignalRService.editMessage(person.id, msgId, editMessage, chatDate);
+    setShowModal(false);
+    setEditMessage('');
   }
 
   function getCurrentTime(timestamp) {
@@ -173,6 +299,22 @@ return milliseconds;
     return currentTime;
   }
 
+  function getDay(date) {
+    const todayDate = new Date();
+    const Today = todayDate.toISOString().split('T')[0];
+
+    const yesterdayDate = new Date(todayDate);
+    yesterdayDate.setDate(todayDate.getDate() - 1);
+
+    const Yesterday = yesterdayDate.toISOString().split('T')[0];
+    if(Today===date){
+      return "Today";
+    }else if(Yesterday===date){
+      return "Yesterday";
+    }
+    return date;
+  }
+
 
   return (
     <div style={{ height: "82%", position: "relative" }}>
@@ -185,10 +327,10 @@ return milliseconds;
             {Object.keys(prevMessages).map((date) => (
               <div key={date}>
                 <div className="text-center my-3">
-  <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
-    {date}
-  </div>
-</div>
+                  <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
+                    {getDay(date)}
+                  </div>
+                </div>
                 {prevMessages[date].map((obj, index) =>
                   obj.senderId === host ? (
                     <div
@@ -200,7 +342,7 @@ return milliseconds;
                         className="d-inline-block ms-auto fs-6 lead m-0 bg-success pt-1 pb-1 rounded text-white"
                         style={{ position: "relative" }}
                       >
-                        {obj.message ? (
+                        {obj.fileType === null ? (
                           <div
                             className="d-flex flex-wrap ms-2 me-2 mt-1"
                             id={index}
@@ -209,9 +351,16 @@ return milliseconds;
                             <p className="m-0 me-2" style={{ position: "relative" }}>
                               {obj.message}
                             </p>
-                            <p className="m-0 mt-auto ms-auto p-0 d-inline" style={{ fontSize: "10px" }}>
-                              {getCurrentTime(obj.timestamp)}
-                            </p>
+                            <div className="d-flex align-items-end ms-auto" style={{ position: "relative" }}>
+                              <p className="m-0 mt-auto ms-auto p-0 d-inline" style={{ fontSize: "10px" }}>
+                                {getCurrentTime(obj.timestamp)}
+                              </p>
+                              <FontAwesomeIcon
+                                icon={faCheckDouble}
+                                className="ms-1"
+                                style={{ fontSize: "10px", color: obj.isRead ? "blue" : "white" }}
+                              />
+                            </div>
                           </div>
                         ) : (
                           <div
@@ -241,6 +390,17 @@ return milliseconds;
                                   ) : (
                                     <AiFillFileUnknown style={{ width: "50px", height: "50px" }} />
                                   )}
+                                  <IoMdDownload
+                                    onClick={() => handleDownload(obj)}
+                                    className="fs-3 text-dark"
+                                    style={{
+                                      position: "absolute",
+                                      bottom: "1rem",
+                                      left: "0",
+                                      borderRadius: "50%",
+                                      cursor: "pointer",
+                                    }}
+                                  />
                                 </div>
                               ) : null}
                               <div className="ms-1">{obj.fileName}</div>
@@ -263,6 +423,9 @@ return milliseconds;
                             <li className="text-center btn d-block" onClick={() => handleModal(obj, index)}>
                               <p className="dropdown-item m-0">Delete</p>
                             </li>
+                            <li className="text-center btn d-block" onClick={() => handleOpen(obj)}>
+                              <p className="dropdown-item m-0">Edit</p>
+                            </li>
                           </ul>
                         </div>
                       </div>
@@ -277,7 +440,7 @@ return milliseconds;
                         className="lead m-0 fs-6 d-inline-block text-white bg-secondary p-3 pt-1 pb-1 rounded"
                         style={{ position: "relative" }}
                       >
-                        {obj.message ? (
+                        {obj.fileType === null ? (
                           <div className="d-flex flex-wrap ms-2 me-2 d-inline" style={{ position: "relative" }}>
                             <p className="m-0 me-2" style={{ position: "relative" }}>
                               {obj.message}
@@ -308,6 +471,17 @@ return milliseconds;
                                   ) : (
                                     <AiFillFileUnknown style={{ width: "50px", height: "50px" }} />
                                   )}
+                                  <IoMdDownload
+                                    onClick={() => handleDownload(obj)}
+                                    className="fs-3 text-dark"
+                                    style={{
+                                      position: "absolute",
+                                      bottom: "1rem",
+                                      left: "0",
+                                      borderRadius: "50%",
+                                      cursor: "pointer",
+                                    }}
+                                  />
                                 </div>
                               ) : null}
                               <p className="ms-1">{obj.fileName}</p>
@@ -340,6 +514,20 @@ return milliseconds;
           borderRadius: "50%",
         }}
       />
+      <Modal centered size="sm" show={showModal} onHide={handleClose}>
+        <Modal.Body>
+          {`Input your new message..
+        
+          ${deleteObject.message ? deleteObject.message : deleteObject.fileName
+            }`}
+        </Modal.Body>
+        <Modal.Footer>
+          <input id="msg" type="text" value={editMessage} onChange={(e) => setEditMessage(e.target.value)} required />
+          <Button variant="success" onClick={handleEdit}>
+            Edit
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

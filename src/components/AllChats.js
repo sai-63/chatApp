@@ -20,7 +20,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson }) {
 
   useEffect(() => {
     axios
-      .get("http://localhost:5290/GetFriends",{params:{id:host}})
+      .get("http://localhost:5290/GetFriends",{params:{userId:host}})
       .then((res) => setUserId(res.data))
       .catch((err) => console.log(err));
   }, [host,state]);
@@ -37,23 +37,29 @@ function AllChats({ show, setShow, message, setMessage, showPerson }) {
     // Check if input is not empty
     if (value.trim() !== '') {
       // Perform action when input is changing
-      console.log('Performing action while typing...');
+      console.log('Performing action while typing...',username);
       axios
-      .get("http://localhost:5290/GetOtherUsers",{params:{id:host}})
-      .then((res) =>
+      .get("http://localhost:5290/GetOtherUsers",{params:{username:username}})
+      .then((res) => {
         setUserId(
           res.data.filter((obj) =>
-            obj.id.toLowerCase().includes(value.toLowerCase())
+            obj.username.toLowerCase().includes(value.toLowerCase())
           )
         )
+        console.log("Friends",res.data);
+        console.log("UserIds",userids);
+      }
       )
       .catch((err) => console.log(err));
     } else {
       // Perform action when input is empty
-      console.log('Input field is empty');
+      console.log('Input field is empty',host);
       axios
-      .get("http://localhost:5290/GetFriends",{params:{id:host}})
-      .then((res) => setUserId(res.data))
+      .get("http://localhost:5290/GetFriends",{params:{userId:host}})
+      .then((res) => {setUserId(res.data);
+        console.log("Friends",res.data);
+        console.log("UserIds",userids);
+      })
       .catch((err) => console.log(err));
     }
   };
@@ -132,9 +138,9 @@ function AllChats({ show, setShow, message, setMessage, showPerson }) {
                   onClick={() => showChat(obj)}
                   className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link"
                 >
-                  <p className="lead ms-2 text-white fs-4 d-inline"> {obj.username} </p>
+                  <p className="lead ms-2 text-white fs-4 d-inline"> {obj.nickname} </p>
                   <p className="lead ms-2 text-white fs-6 d-inline ms-auto mt-5 mb-0">
-                    {obj.id}
+                    {obj.username}
                   </p>
                 </NavLink>
                 <hr className="ms-1 w-75 m-0" />
