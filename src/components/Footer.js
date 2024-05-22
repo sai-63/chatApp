@@ -2,18 +2,15 @@ import axios from "axios";
 import EmojiPicker from "emoji-picker-react";
 import React, { createElement, useEffect, useState } from "react";
 import { Button, OverlayTrigger, Popover } from "react-bootstrap";
-import Spinner from "react-bootstrap/Spinner";
 import { useForm } from "react-hook-form";
 import { AiOutlineSend } from "react-icons/ai";
 import { BsEmojiSunglasses } from "react-icons/bs";
-import { GiCancel } from "react-icons/gi";
 import { GrAttachment } from "react-icons/gr";
-import socket from "./socket";
 import SignalRService from './SignalRService';
 
 function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessages}) {
   let { handleSubmit } = useForm();
-  let [host, setHost] = useState("");
+  const host = localStorage.getItem("userId");
   let [receiver,setReciever] = useState("");
   let [value, setValue] = useState("");
   let [disabled, setDisabled] = useState(false);
@@ -23,48 +20,17 @@ function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessa
   const [message, setMessage] = useState('');
   const [user, setUser] = useState('');
   
-  useEffect(()=>{
-    localStorage.setItem("reciever",person.id);
-    startConnection();
-  },[person]);
+  // useEffect(()=>{
+  //   localStorage.setItem("reciever",person.id);
+  //   startConnection();
+  // },[person]);
 
-  useEffect(() => {
-    SignalRService.setReceiveMessageCallback((chat) => {
-      const chatDate = new Date(chat.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
-      setPrevMessages(prevMessages => {
-        const updatedMessages = { ...prevMessages };
-        if (updatedMessages[chatDate]) {
-          updatedMessages[chatDate].push(chat); // Append chat to existing date's messages
-        } else {
-          updatedMessages[chatDate] = [chat]; // Create a new list for the date if it doesn't exist
-        }
-        return updatedMessages;
-      });
-    });
-  }, []);
-  
-  // useEffect(() => {
-  //   SignalRService.setRemoveMessageCallback((id) => {
-  //     // Function to remove the chat with matching messageId
-  //     const removeMessage = (messageId) => {
-  //       setPrevMessages(prevMessages => prevMessages.filter(message => message.messageId !== messageId));
-  //     };
-  
-  //     // Call the function to remove the message with the provided id
-  //     removeMessage(id);
-  //   });
-  // }, [prevMessages]);
+  // function startConnection() {
 
-  function startConnection() {
-
-    console.log("HI");
-    SignalRService.startConnection();
-    console.log("Reached");
-    setHost(localStorage.getItem("userId"));
-    // console.log("Prev in signalR:",prevMessages);
-    // console.log("Bye");
-
-  }
+  //   console.log("HI");
+  //   SignalRService.startConnection();
+  //   console.log("Reached");
+  // }
 
   function generateUUID() {
     // Generate a random UUID
@@ -75,51 +41,81 @@ function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessa
     });
 }
 
-  function submitMessage() {
-    setSpin(true);
-    value = value.trimStart();
-    const messageId = generateUUID();
-    data = {
-      messageId:messageId,
-      senderId:host,
-      receiverId:person.id,
-      message: value,
-      timestamp: new Date().toISOString()
-    }
-    if (value.length!==0) {
-      axios.post('http://localhost:5290/Chat/Send Message', data)
-        .then((res) => {
-          setValue("");
-          setSpin(false);
-          alert('Message successfully sent');
-          console.log(res.data);
-          console.log(host);
-          setPrevMessages([...prevMessages, data]);
-          // console.log(prevMessages,data);
-          // console.log([...prevMessages,data])
-          // console.log("Prev in footer",prevMessages);
-        })
-        .catch((error) => {
-          console.log(error);
-        })
-      console.log("Person.id:",person.id);
-      // SignalRService.sendMessage(host, data, host);
-      SignalRService.sendMessage(host, data, person.id); // Send message via SignalR
-    }
-    
+async function submitMessage() {
+  setSpin(true);
+  value = value.trimStart();
+  const messageId = generateUUID();
+  const timestamp = new Date().toISOString();
+  const formData = new FormData();
+  formData.append('SenderId', host);
+  formData.append('ReceiverId', person.id);
+  formData.append('Message', value);
+  formData.append('MessageId', messageId);
+  formData.append('Timestamp', timestamp);
+
+  let data = {
+    messageId: messageId,
+    senderId: host,
+    receiverId: person.id,
+    message: value,
+    isRead: false,
+    timestamp: timestamp,
+    fileContent: null,
+    fileName: null,
+    fileType: null,
+    fileSize: null
+  };
+
+  console.log(host);
+  console.log(person.id);
+  for (let pair of formData.entries()) {
+    console.log(pair[0] + ', ' + pair[1]);
   }
 
-  useEffect(()=>{
-    // console.log("Prev messages changed in footer :",prevMessages);
-  },[prevMessages]);
+  if (file !== null) {
+    formData.append("File", file);
 
-  const handleMessageChange = (event) => {
-    setMessage(event.target.value);
-  };
+    data = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const arrayBuffer = event.target.result;
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const base64String = btoa(String.fromCharCode.apply(null, uint8Array));
+        data.fileContent = base64String;
+        data.fileName = file.name;
+        data.fileType = file.type;
+        data.fileSize = file.size;
+        resolve(data); // Resolve the promise with updated data
+      };
+      reader.onerror = function (error) {
+        reject(error); // Reject the promise if there's an error
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
 
-  const handleUserChange = (event) => {
-    setUser(event.target.value);
-  };
+  if (value.length !== 0) {
+    axios.post('http://localhost:5290/Chat/Send Message', formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+      .then((res) => {
+        setValue("");
+        setSpin(false);
+        alert('Message successfully sent');
+        console.log(res.data);
+        console.log(host);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+    console.log("Person.id:", person.id);
+    SignalRService.sendMessage(host, data, person.id); // Send message via SignalR
+    setDisabled(false);
+  }
+}
+
   function handleChange(event) {
     setValue(event.target.value);
   }
@@ -132,63 +128,6 @@ function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessa
     setValue(event.target.files[0].name);
     setDisabled(true);
   }
-
-  function submitFile() {
-    if (file) {
-        SignalRService.sendFile(file);
-    }
-  }
-
-  // function submitFile(event){
-  //   SignalRService.sendFile(event);
-  // }
-
-  // function downloadFile(event){
-  //   SignalRService.downloadFile(event);
-  // }
-  /*function submitFile() {
-    let obj = {};
-    setSpin(true);
-
-    obj.senderId = host;
-    obj.receiverId = person.id;
-    obj.timestamp = Date.now()
-
-    obj.fileName = file.name;
-
-    //obj.bfile = bFile;
-
-    let fd = new FormData();
-
-    fd.append("details", JSON.stringify(obj));
-
-    fd.append("file", file);
-
-    axios
-      .post("https://chtvthme.onrender.com/conversation-api/send-file", fd)
-      .then((res) => {
-        setValue("");
-        setSpin(false);
-        setDisabled(false);
-        const socketObj = {};
-        socketObj.senderId = host;
-        socketObj.receiverId = person.userid;
-        socket.emit("message-sent", socketObj);
-      })
-      .catch((err) => console.log(err.message));
-  }*/
-
-  function cancelFile() {
-    setValue("");
-    setDisabled(false);
-  }
-
-
-  
-
-
-  
-
   
   return (
     <form
@@ -216,8 +155,7 @@ function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessa
           rootClose={true}
           overlay={
             <Popover className="d-block">
-              <input type="file" id="fileInput" onchange={submitFile} />
-              <button onclick={SignalRService.downloadFile}>Download File</button>
+              <input type="file" onInput={handleFile} />
             </Popover>
           }
         >

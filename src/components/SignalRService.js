@@ -5,6 +5,8 @@ class SignalRService {
     this.connection = null;
     this.receiveMessageCallback = null;
     this.removeMessageCallback = null;
+    this.editMessageCallback = null;
+    this.readMessageCallback = null;
     this.isConnected = false;
     this.userId = null;
     this.receiver = null;
@@ -41,6 +43,7 @@ class SignalRService {
       this.connection.on("ReceiveMessage", (user,chat) => {
         console.log(`${chat.senderId}: ${chat.message}`,this.receiver);
         if(this.receiver === user || this.userId === user){
+          this.readMessage(this.receiver,[chat.messageId]);
         if (this.receiveMessageCallback) {
           this.receiveMessageCallback(chat);
         }}
@@ -53,7 +56,20 @@ class SignalRService {
           this.removeMessageCallback(messageId,chatDate);
         }
     });
-    
+      
+    this.connection.on("MessageEdited", (messageId,newMessage,chatDate) => {
+      // Remove message from UI using messageId
+      // Example: document.getElementById(messageId).remove();
+      if (this.editMessageCallback) {
+        this.editMessageCallback(messageId,newMessage,chatDate);
+      }
+  });
+
+    this.connection.on("MessageRead", (messageIds) => {
+      if (this.readMessageCallback) {
+        this.readMessageCallback(messageIds);
+      }
+    });
 
     }
   }
@@ -81,6 +97,24 @@ class SignalRService {
     }
   }
 
+  editMessage(receiverId,messageId,newMessage,chatDate) {
+    if (this.connection) {
+      this.connection.invoke("EditMessage",receiverId, messageId, newMessage, chatDate)
+        .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+
+  readMessage(receiverId,messageIds){
+    if(this.connection){
+      this.connection.invoke("MarkAsRead",receiverId, messageIds)
+        .catch(err => console.error(err.toString()));
+    }else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+
   setReceiveMessageCallback(callback) {
     if (!this.receiveMessageCallback) {
       this.receiveMessageCallback = callback;
@@ -92,6 +126,19 @@ class SignalRService {
       this.removeMessageCallback = callback;
     }
   }
+
+  setEditMessageCallback(callback){
+    if (!this.editMessageCallback) {
+      this.editMessageCallback = callback;
+    }
+  }
+
+  setReadMessageCallback(callback){
+    if (!this.readMessageCallback) {
+      this.readMessageCallback = callback;
+    }
+  }
+
 }
 
 export default new SignalRService();
