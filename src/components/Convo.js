@@ -18,18 +18,75 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckDouble } from '@fortawesome/free-solid-svg-icons';
 import SignalRService from './SignalRService';
 
-function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessages }) {
+function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessages, allMessages, setAllMessages }) {
   let host = localStorage.getItem("userId");
   let [isLoaded, setIsLoaded] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [deleteObject, setDeleteObject] = useState({});
   const [editObject, setEditObject] = useState({});
   const [state, setState] = useState(true);
   const [scroll, setScroll] = useState(false);
   const [editMessage, setEditMessage] = useState("");
   const [isRead, setIsRead] = useState(false);
-  let delObj = {};
+  const [showDeleteModal, setShowDeleteModal] = useState(false); // State for delete modal
+  const [deleteObject, setDeleteObject] = useState({}); // Adjust this as per your delete object structure
 
+  const handleDeleteClose = () => setShowDeleteModal(false);
+
+  const handleDeleteForEveryone = () => {
+    const chatDate = new Date(deleteObject.timestamp).toISOString().split('T')[0];
+    const msgId = deleteObject.messageId;
+    axios
+      .post(
+        "http://localhost:5290/Chat/DeleteMessage?messageId=" + msgId
+      )
+      .then((res) => {
+        console.log(res.data.message);
+      })
+      .catch((err) => {
+        console.log(err.message);
+      });
+    SignalRService.removeMessage(person.id, msgId, chatDate);
+    handleDeleteClose();
+  };
+
+  const handleDeleteForMe = () => {
+    const chatDate = new Date(deleteObject.timestamp).toISOString().split('T')[0];
+    const msgId = deleteObject.messageId;
+
+    setAllMessages(allMessages => {
+      const updatedMessages = { ...allMessages[person.username] };
+
+      if (updatedMessages[chatDate]) {
+        updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.messageId !== msgId);
+
+        if (updatedMessages[chatDate].length === 0) {
+          delete updatedMessages[chatDate];
+        }
+      }
+
+      return {
+        ...allMessages,
+        [person.username]: updatedMessages
+      };
+    });
+
+    axios
+      .post(
+        "http://localhost:5290/Chat/DeleteMessageForMe?messageId=" + msgId
+      )
+      .then((res) => {
+        console.log(res.data.message);
+      })
+      .catch((err) => {
+        console.log(err.message);
+      });
+    handleDeleteClose();
+  };
+
+  function handleDeleteModal(obj, index) {
+    setDeleteObject(obj);
+    setShowDeleteModal(true);
+  }
 
   function handleOpen(obj) {
     setShowModal(true);
@@ -49,41 +106,50 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     }
   }
 
-  function startConnection() {
-
-    console.log("HI");
-    SignalRService.startConnection();
-    console.log("Reached");
-  }
-
   useEffect(() => {
 
     SignalRService.setReceiveMessageCallback((chat) => {
-      axios.post('http://localhost:5290/Chat/markasread?messageIds',[chat.messageId])
+      console.log("Person Nameeeeeeeeeeeeeeeeeeeeeeeee:",person.username);
+      if (chat.receiverId === host) {
+        axios.post('http://localhost:5290/Chat/markasread?messageIds', [chat.messageId])
+          .then((response) => {
+            console.log(response.data);
+          })
+      }
       const chatDate = new Date(chat.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
-      setPrevMessages(prevMessages => {
-        const updatedMessages = { ...prevMessages };
+
+      setAllMessages(allMessages => {
+        const updatedMessages = { ...allMessages[person.username] };
+
         if (updatedMessages[chatDate]) {
-          updatedMessages[chatDate].push(chat); // Append chat to existing date's messages
+          updatedMessages[chatDate] = [...updatedMessages[chatDate], chat]; // Append chat to existing date's messages
         } else {
           updatedMessages[chatDate] = [chat]; // Create a new list for the date if it doesn't exist
         }
-        return updatedMessages;
+
+        return {
+          ...allMessages,
+          [person.username]: updatedMessages
+        };
       });
     });
 
-    const removeMessage = (date, messageId) => {
-      setPrevMessages(prevMessages => {
-        const updatedMessages = { ...prevMessages };
-        if (updatedMessages[date]) {
-          updatedMessages[date] = updatedMessages[date].filter(message => message.messageId !== messageId);
-          if (updatedMessages[date].length == 0) {
-            delete updatedMessages[date];
+    const removeMessage = (chatDate, messageId) => {
+      setAllMessages(allMessages => {
+        const updatedMessages = { ...allMessages[person.username] };
+        if (updatedMessages[chatDate]) {
+          updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.messageId !== messageId);
+          if (updatedMessages[chatDate].length === 0) {
+            delete updatedMessages[chatDate];
           }
         }
-        return updatedMessages;
+        return {
+          ...allMessages,
+          [person.username]: updatedMessages
+        };
       });
     };
+
 
     SignalRService.setRemoveMessageCallback((id, chatDate) => {
       removeMessage(chatDate, id);
@@ -91,14 +157,18 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
 
     // Function to update the chat message with matching messageId from a specific date
     const editMessage = (date, messageId, newMessage) => {
-      setPrevMessages(prevMessages => {
-        const updatedMessages = { ...prevMessages };
+      setAllMessages(allMessages => {
+        const updatedMessages = { ...allMessages[person.username] };
         if (updatedMessages[date]) {
           updatedMessages[date] = updatedMessages[date].map(message =>
             message.messageId === messageId ? { ...message, message: newMessage } : message
           );
         }
-        return updatedMessages;
+        // Update allMessages with updated messages for the person
+        return {
+          ...allMessages,
+          [person.username]: updatedMessages
+        };
       });
     };
 
@@ -107,8 +177,8 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     });
 
     const readMessage = (messageIds) => {
-      setPrevMessages(prevMessages => {
-        const updatedMessages = { ...prevMessages };
+      setAllMessages(allMessages => {
+        const updatedMessages = { ...allMessages[person.username] };
         for (const key in updatedMessages) {
           if (updatedMessages.hasOwnProperty(key)) {
             const messageList = updatedMessages[key];
@@ -120,18 +190,21 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
             });
           }
         }
-        return updatedMessages;
+        // Update allMessages with updated prevMessages
+        return {
+          ...allMessages,
+          [person.username]: updatedMessages
+        };
       });
     };
 
     SignalRService.setReadMessageCallback((messageIds) => {
       readMessage(messageIds);
     });
-  }, []);
+  }, [person]);
 
   useEffect(() => {
-    localStorage.setItem("reciever", person.id);
-    startConnection();
+    SignalRService.changeReceiver(person.id);
   }, [person]);
 
   const handleDownload = async (obj) => {
@@ -170,36 +243,26 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
   useEffect(() => {
 
     let hosting = localStorage.getItem("user");
-    const newMessages = [];
 
-    axios.get("http://localhost:5290/Chat/GetMessagesSenderIdUserId", { params: { senderId: host, receiverId: person.id } })
-      .then((response) => {
-        console.log(response)
-        console.log(response.data);
-        setPrevMessages(response.data);
-        setShow(false);
-        //setMessage("");
-        setIsLoaded(true);
-        setScroll(!scroll);
-        const messages = response.data;
-        for (const key in messages) {
-          if (messages.hasOwnProperty(key)) {
-            const messageList = messages[key];
-            messageList.forEach(message => {
-              if (message.senderId !== host && !message.isRead) {
-                newMessages.push(message.messageId);
-              }
-            });
+    const messages = allMessages[person.username];
+    const newMessages = [];
+    for (const key in messages) {
+      if (messages.hasOwnProperty(key)) {
+        const messageList = messages[key];
+        messageList.forEach(message => {
+          if (message.senderId !== host && !message.isRead) {
+            newMessages.push(message.messageId);
           }
-        }
-        axios.post(`http://localhost:5290/Chat/markasread?messageIds`, newMessages)
-          .then((response) => {
-            console.log(response.data)
-          })
-          .catch((err) => console.log(err.message));
-        SignalRService.readMessage(person.id, newMessages);
+        });
+      }
+    }
+    axios.post(`http://localhost:5290/Chat/markasread?messageIds`, newMessages)
+      .then((response) => {
+        console.log(response.data)
       })
       .catch((err) => console.log(err.message));
+    console.log('New messagessssssssssssssssssssssssss:', newMessages);
+    SignalRService.readMessage(person.id, newMessages);
 
   }, [person, search]);
 
@@ -235,37 +298,6 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     return milliseconds;
   };
 
-  function handleModal(obj, index) {
-    console.log("index", index);
-    // setShowModal(true);
-    console.log("Object issssss:", obj);
-    const chatDate = new Date(obj.timestamp).toISOString().split('T')[0];
-    const msgId = obj.messageId;
-    console.log("Obj Msg Id", msgId);
-    setPrevMessages(prevMessages => {
-      const updatedMessages = { ...prevMessages };
-      if (updatedMessages[chatDate]) {
-        updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.messageId !== obj.id);
-      }
-      return updatedMessages;
-    });
-    axios
-      .post(
-        "http://localhost:5290/Chat/DeleteMessage?messageId=" + msgId
-      )
-      .then((res) => {
-        console.log(res.data.message);
-        // const socketObj = {};
-        // socketObj.senderId = host;
-        // socketObj.receiverId = person.userid;
-        // socket.emit("delete-message", socketObj);
-      })
-      .catch((err) => {
-        console.log(err.message);
-      });
-    SignalRService.removeMessage(person.id, msgId, chatDate);
-  }
-
   function handleEdit() {
     const chatDate = new Date(editObject.timestamp).toISOString().split('T')[0];
     const msgId = editObject.messageId;
@@ -274,6 +306,11 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     setPrevMessages(prevMessages => {
       const updatedMessages = { ...prevMessages };
       return updatedMessages;
+    });
+    setAllMessages(allMessages => {
+      const updatedAllMessages = { ...allMessages };
+      updatedAllMessages[person.username] = prevMessages;
+      return updatedAllMessages;
     });
     axios.post(`http://localhost:5290/Chat/EditMessage?messageId=${msgId}&newMessage=${editMessage}`)
       .then((res) => {
@@ -307,9 +344,9 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     yesterdayDate.setDate(todayDate.getDate() - 1);
 
     const Yesterday = yesterdayDate.toISOString().split('T')[0];
-    if(Today===date){
+    if (Today === date) {
       return "Today";
-    }else if(Yesterday===date){
+    } else if (Yesterday === date) {
       return "Yesterday";
     }
     return date;
@@ -322,16 +359,16 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
         ref={scrollRef}
         className="d-flex flex-column overflow-auto pb-2 bg-light h-100"
       >
-        {Object.keys(prevMessages).length !== 0 ? (
+        {Object.keys(allMessages[person.username]).length !== 0 ? (
           <div className="mt-auto">
-            {Object.keys(prevMessages).map((date) => (
+            {Object.keys(allMessages[person.username]).map((date) => (
               <div key={date}>
                 <div className="text-center my-3">
                   <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
                     {getDay(date)}
                   </div>
                 </div>
-                {prevMessages[date].map((obj, index) =>
+                {allMessages[person.username][date].map((obj, index) =>
                   obj.senderId === host ? (
                     <div
                       key={index}
@@ -420,7 +457,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                             data-bs-toggle="dropdown"
                           />
                           <ul className="dropdown-menu p-0 text-center">
-                            <li className="text-center btn d-block" onClick={() => handleModal(obj, index)}>
+                            <li className="text-center btn d-block" onClick={() => handleDeleteModal(obj, index)}>
                               <p className="dropdown-item m-0">Delete</p>
                             </li>
                             <li className="text-center btn d-block" onClick={() => handleOpen(obj)}>
@@ -525,6 +562,23 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
           <input id="msg" type="text" value={editMessage} onChange={(e) => setEditMessage(e.target.value)} required />
           <Button variant="success" onClick={handleEdit}>
             Edit
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal centered size="sm" show={showDeleteModal} onHide={handleDeleteClose}>
+        <Modal.Body>
+          Are you sure you want to delete this message?
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="danger" onClick={handleDeleteForEveryone}>
+            Delete for everyone
+          </Button>
+          <Button variant="warning" onClick={handleDeleteForMe}>
+            Delete for me
+          </Button>
+          <Button variant="secondary" onClick={handleDeleteClose}>
+            Cancel
           </Button>
         </Modal.Footer>
       </Modal>
