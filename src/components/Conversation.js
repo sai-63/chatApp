@@ -4,7 +4,7 @@ import Footer from "./Footer";
 import Header from "./Header";
 import { set } from "react-hook-form";
 
-function Conversation({ setShow, setMessage, person, showPerson }) {
+function Conversation({ setShow, setMessage, person, showPerson, allMessages, setAllMessages }) {
   const [search, setSearch] = useState("");
   const [prevMessages, setPrevMessages] = useState([]);
   return (
@@ -17,8 +17,11 @@ function Conversation({ setShow, setMessage, person, showPerson }) {
         search={search}
         prevMessages={prevMessages}
         setPrevMessages={setPrevMessages}
+        allMessages={allMessages}
+        setAllMessages={setAllMessages}
       />
-      <Footer person={person} prevMessages={prevMessages} setPrevMessages={setPrevMessages} />
+      <Footer person={person} prevMessages={prevMessages} setPrevMessages={setPrevMessages} allMessages={allMessages}
+        setAllMessages={setAllMessages}/>
     </>
   );
 }

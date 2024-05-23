@@ -29,6 +29,7 @@ function Register() {
       Password: password,
       Email: email,
       Nickname: nickname,
+      IsOnline:true,
       Friends: []
     };
 

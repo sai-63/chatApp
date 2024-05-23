@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Container, Nav, Navbar } from "react-bootstrap";
 import { NavLink, useNavigate } from "react-router-dom";
 import EditProfile from "./EditProfile";
-import socket from "./socket";
+import SignalRService from "./SignalRService";
 
 function NavigationBar() {
   let [host, setHost] = useState("");
@@ -18,9 +18,8 @@ function NavigationBar() {
   const inactiveLink = {
     color: "white",
   };
-  function handleLogout() {
-    let host = localStorage.getItem("userId");
-    socket.emit("remove-user", host);
+  async function handleLogout() {
+    await SignalRService.userOffline();
     localStorage.clear();
     setHost("");
     navigate("/login");

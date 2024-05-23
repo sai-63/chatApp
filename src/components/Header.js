@@ -1,34 +1,52 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { OverlayTrigger, Popover } from "react-bootstrap";
 import { AiOutlineSearch, AiOutlineCloseCircle } from "react-icons/ai";
 import { BiArrowBack } from "react-icons/bi";
 import { FiMoreVertical } from "react-icons/fi";
+import SignalRService from "./SignalRService";
 import socket from "./socket";
-import { useEffect } from "react";
 
 function Header({ person, showPerson, setSearch }) {
   const [iconActive, setIconActive] = useState(true);
-  const [onlineUsers, setOnlineUsers] = useState([]);
   const [typing, setTyping] = useState(null);
-  const [host, setHost] = useState("");
-
-  socket.on("allusers", (allUsers) => {
-    setOnlineUsers(allUsers);
-  });
-
-  socket.on("typing", (data) => {
-    setTyping(data);
-  });
-
-  socket.on("not-typing", (data) => {
-    setTyping(null);
-  });
+  const [userState, setUserState] = useState(person.isOnline ? "Online" : "Offline");
 
   useEffect(() => {
-    socket.emit("reload");
-    const host = localStorage.getItem("user");
-    setHost(host);
+    setUserState(person.isOnline ? "Online" : "Offline");
+  }, [person.isOnline]);
+
+  useEffect(() => {
+    const handleTyping = (data) => {
+      setTyping(data);
+    };
+    
+    socket.on("typing", handleTyping);
+
+    return () => {
+      socket.off("typing", handleTyping);
+    };
   }, []);
+
+  useEffect(() => {
+    const handleDisplayOnline = (username) => {
+      console.log("handle display online is working..........");
+      if (username === person.username) {
+        showPerson(prevPerson => ({ ...prevPerson, isOnline: true }));
+      }
+    };
+
+    SignalRService.setDisplayOnlineCallback(handleDisplayOnline);
+
+    const handleDisplayOffline = (username) => {
+      console.log("handle display offline is working..........");
+      if (username === person.username) {
+        showPerson(prevPerson => ({ ...prevPerson, isOnline: false }));
+      }
+    };
+
+    SignalRService.setDisplayOfflineCallback(handleDisplayOffline);
+
+  }, [person.username, showPerson]);
 
   return (
     <div
@@ -43,10 +61,9 @@ function Header({ person, showPerson, setSearch }) {
         />
         <div className="ms-4 p-0">
           <span className="fs-5 p-0 m-0">
-            {person.username?.charAt(0).toUpperCase() +
-              person.username?.slice(1)}
+            {person.username?.charAt(0).toUpperCase() + person.username?.slice(1)}
           </span>
-          
+          <p>{userState}</p>
         </div>
       </div>
       <div className="ms-auto">
@@ -58,13 +75,9 @@ function Header({ person, showPerson, setSearch }) {
             <Popover>
               <input
                 type="text"
-                name=""
-                id=""
                 className="form-control"
                 placeholder="Search Chat..."
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                }}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </Popover>
           }
@@ -88,7 +101,6 @@ function Header({ person, showPerson, setSearch }) {
             )}
           </div>
         </OverlayTrigger>
-
         <FiMoreVertical className="m-2 fs-5" />
       </div>
     </div>

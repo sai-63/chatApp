@@ -8,10 +8,9 @@ import { BsEmojiSunglasses } from "react-icons/bs";
 import { GrAttachment } from "react-icons/gr";
 import SignalRService from './SignalRService';
 
-function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessages}) {
+function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessages, allMessages, setAllMessages}) {
   let { handleSubmit } = useForm();
   const host = localStorage.getItem("userId");
-  let [receiver,setReciever] = useState("");
   let [value, setValue] = useState("");
   let [disabled, setDisabled] = useState(false);
   let [file, setFile] = useState(null);
@@ -19,18 +18,6 @@ function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessa
   let data = {};
   const [message, setMessage] = useState('');
   const [user, setUser] = useState('');
-  
-  // useEffect(()=>{
-  //   localStorage.setItem("reciever",person.id);
-  //   startConnection();
-  // },[person]);
-
-  // function startConnection() {
-
-  //   console.log("HI");
-  //   SignalRService.startConnection();
-  //   console.log("Reached");
-  // }
 
   function generateUUID() {
     // Generate a random UUID
@@ -59,6 +46,7 @@ async function submitMessage() {
     receiverId: person.id,
     message: value,
     isRead: false,
+    senderRemoved: false,
     timestamp: timestamp,
     fileContent: null,
     fileName: null,
@@ -102,16 +90,31 @@ async function submitMessage() {
     })
       .then((res) => {
         setValue("");
-        setSpin(false);
-        alert('Message successfully sent');
-        console.log(res.data);
-        console.log(host);
+      //   setSpin(false);
+      //   alert('Message successfully sent');
+      //   const chatDate = new Date(data.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
+
+      // // setAllMessages(allMessages => {
+      // //   const updatedMessages = { ...allMessages[person.username] };
+
+      // //   if (updatedMessages[chatDate]) {
+      // //     updatedMessages[chatDate] = [...updatedMessages[chatDate], data]; // Append chat to existing date's messages
+      // //   } else {
+      // //     updatedMessages[chatDate] = [data]; // Create a new list for the date if it doesn't exist
+      // //   }
+
+      //   return {
+      //     ...allMessages,
+      //     [person.username]: updatedMessages
+      //   };
+      // });
       })
       .catch((error) => {
         console.log(error);
       });
-    console.log("Person.id:", person.id);
+    console.log(host," is sending to the Person.id:", person.id);
     SignalRService.sendMessage(host, data, person.id); // Send message via SignalR
+    SignalRService.incrementUnseenMessages(person.id,localStorage.getItem("username"));
     setDisabled(false);
   }
 }

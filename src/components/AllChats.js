@@ -3,111 +3,116 @@ import React, { useEffect, useState } from "react";
 import { AiFillCloseCircle, AiOutlineSearch } from "react-icons/ai";
 import { CgProfile } from "react-icons/cg";
 import { NavLink } from "react-router-dom";
-// import EditProfile from "./EditProfile";
+import SignalRService from "./SignalRService";
 
-function AllChats({ show, setShow, message, setMessage, showPerson }) {
-  let [host, setHost] = useState("");
-  let [showModal, setShowModal] = useState(false);
-  let [userids, setUserId] = useState([]);
-  let [username,setUsername] = useState('');
-  let [state,setState] = useState(false);
+function AllChats({ show, setShow, message, setMessage, person, showPerson ,userIds, setUserIds,unseenMessages,setUnseenMessages}) {
+  const [host, setHost] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [username, setUsername] = useState("");
   const [inputValue, setInputValue] = useState('');
 
-  useEffect(()=>{
-    setHost(localStorage.getItem("userId"));
-    setUsername(localStorage.getItem("username"))
-  },[]);
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    const username = localStorage.getItem("username");
+    setHost(userId);
+    setUsername(username);
+  }, []);
 
   useEffect(() => {
-    axios
-      .get("http://localhost:5290/GetFriends",{params:{userId:host}})
-      .then((res) => setUserId(res.data))
-      .catch((err) => console.log(err));
-  }, [host,state]);
+    SignalRService.setOnlineUsersCallback((Username) => {
+      setUserIds((userIds) => {
+        let userFound = false;
+        const updatedUserIds = userIds.map(user => {
+          if (user.username === Username) {
+            userFound = true;
+            return { ...user, isOnline: true };
+          }
+          return user;
+        });
+        if (userFound) {
+          alert(`Your friend ${Username} is online`);
+        }
+        return updatedUserIds;
+      });
+    });
+
+    SignalRService.setOfflineUsersCallback((username) => {
+      console.log("A user went offlineeeeeeeeee:",username);
+      setUserIds((userIds) => 
+        userIds.map(user =>
+          user.username === username ? { ...user, isOnline: false } : user
+        )
+      );
+    });
+
+    SignalRService.setIncrementUnseenMessagesCallback((username,seen) => {
+      if(seen===null){
+        setUnseenMessages((unseenMessages) => ({
+          ...unseenMessages,
+          [username]: (unseenMessages[username] || 0) + 1,
+        }));
+      }else{
+        setUnseenMessages((unseenMessages) => ({
+          ...unseenMessages,
+          [username]: 0,
+        }));      
+      }
+      console.log("Unseen counttttttttttttttttttttttttttttttttttttttttttttttttttttt :",unseenMessages[username]);
+    });
+
+  }, []);
 
   const handleInputChange = (event) => {
     const newValue = event.target.value;
     setInputValue(newValue);
 
-    // Perform action when input is changing
     performActionWhileTyping(newValue);
   };
 
   const performActionWhileTyping = (value) => {
-    // Check if input is not empty
     if (value.trim() !== '') {
-      // Perform action when input is changing
-      console.log('Performing action while typing...',username);
       axios
-      .get("http://localhost:5290/GetOtherUsers",{params:{username:username}})
-      .then((res) => {
-        setUserId(
-          res.data.filter((obj) =>
-            obj.username.toLowerCase().includes(value.toLowerCase())
-          )
-        )
-        console.log("Friends",res.data);
-        console.log("UserIds",userids);
-      }
-      )
-      .catch((err) => console.log(err));
+        .get("http://localhost:5290/GetOtherUsers", { params: { username: value } })
+        .then((res) => {
+          setUserIds(
+            res.data.filter((obj) =>
+              obj.username.toLowerCase().includes(value.toLowerCase())
+            )
+          );
+        })
+        .catch((err) => console.log(err));
     } else {
-      // Perform action when input is empty
-      console.log('Input field is empty',host);
       axios
-      .get("http://localhost:5290/GetFriends",{params:{userId:host}})
-      .then((res) => {setUserId(res.data);
-        console.log("Friends",res.data);
-        console.log("UserIds",userids);
-      })
-      .catch((err) => console.log(err));
+        .get("http://localhost:5290/GetFriends", { params: { userId: host } })
+        .then((res) => setUserIds(res.data))
+        .catch((err) => console.log(err));
     }
   };
 
-  // function handleChange(event) {
-  //   axios
-  //     .get("http://localhost:5290/GetOtherUsers",{params:{id:host}})
-  //     .then((res) =>
-  //       setUserId(
-  //         res.data.filter((obj) =>
-  //           obj.id.toLowerCase().includes(event.target.value.toLowerCase())
-  //         )
-  //       )
-  //     )
-  //     .catch((err) => console.log(err));
-  //   setState(!state);
-  // }
-
   const showChat = (obj) => {
-    console.log("Object Id ----------:  ",host,"  ",obj.id)
-    const data={
-      userId:host,
-      friendId:obj.id
-    }
+    const data = {
+      userId: host,
+      friendId: obj.id
+    };
     axios
-    .post("http://localhost:5290/AddFriend",data)
-    .then((response)=>{
-      console.log("Posted Successfullyyyyyyyyyyyyyyyyyyyy")
-      console.log(response.data)
-    })
-    .catch((err) => console.log(err));
-    console.log("After posttttttttt")
+      .post("http://localhost:5290/AddFriend", data)
+      .then((response) => {
+        console.log("Posted Successfully", response.data);
+      })
+      .catch((err) => console.log(err));
+    SignalRService.incrementUnseenMessages(host,obj.username,"seen");
     showPerson(obj);
   };
 
-  function handleShow() {
+  const handleShow = () => {
     setShow(false);
     setMessage("");
-  }
+  };
+
   return (
     <div className="chats overflow-auto" style={{ maxHeight: "100%" }}>
       <h1 className="lead fs-3 text-center m-2 mt-4">
-        {" "}
-        Welcome{" "}
-        <i>
-          <b>{username}</b>
-        </i>
-        ..!!
+        Welcome <i><b>{username}</b></i>..!!
       </h1>
       <div className="ms-2 d-flex align-items-center mt-1">
         <div className="w-100">
@@ -130,21 +135,23 @@ function AllChats({ show, setShow, message, setMessage, showPerson }) {
       <p className="lead ms-2">Your Chats</p>
       <hr className="w-50 ms-1 m-0" />
       <div className="" style={{ position: "relative" }}>
-        {userids?.map(
+        {userIds?.map(
           (obj) =>
             obj.id !== host && (
-              <>
+              <React.Fragment key={obj.id}>
                 <NavLink
                   onClick={() => showChat(obj)}
                   className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link"
                 >
                   <p className="lead ms-2 text-white fs-4 d-inline"> {obj.nickname} </p>
+                  <p className="lead ms-2 text-white fs-4 d-inline"> {obj.isOnline ? "Online" : "Offline"} </p>
+                  <p className="lead ms-2 text-white fs-4 d-inline"> {unseenMessages[obj.username]} </p>
                   <p className="lead ms-2 text-white fs-6 d-inline ms-auto mt-5 mb-0">
                     {obj.username}
                   </p>
                 </NavLink>
                 <hr className="ms-1 w-75 m-0" />
-              </>
+              </React.Fragment>
             )
         )}
       </div>

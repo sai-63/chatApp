@@ -4,7 +4,7 @@ import { Button } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { BiHide, BiShow } from "react-icons/bi";
 import { NavLink, useNavigate } from "react-router-dom";
-import socket from "./socket";
+import SignalRService from "./SignalRService";
 
 function Login() {
   let { register, handleSubmit } = useForm();
@@ -23,6 +23,7 @@ function Login() {
       Password:password,
       Email:'',
       Nickname:'',
+      IsOnline:false,
       Friends:[]
     };
     axios.post(url,data)
@@ -34,6 +35,7 @@ function Login() {
             alert("Login Successful");
             localStorage.setItem("username",username);
             localStorage.setItem("userId",dt.id);
+            SignalRService.startConnection();
             navigate("/chat");
         }else{
             alert('Invalid Credentials');
