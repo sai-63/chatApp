@@ -9,10 +9,10 @@ import socket from "./socket";
 function Header({ person, showPerson, setSearch }) {
   const [iconActive, setIconActive] = useState(true);
   const [typing, setTyping] = useState(null);
-  const [userState, setUserState] = useState(person.isOnline ? "Online" : new Date(person.lastSeen).toISOString().replace('T', ' ').substr(0, 19)+" "+getAMorPM(person.lastseen));
+  const [userState, setUserState] = useState(person.isOnline ? "Online" : "Last Online at "+new Date(person.lastSeen).toISOString().replace('T', ' ').substr(0, 19)+" "+getAMorPM(person.lastseen));
 
   useEffect(() => {
-    setUserState(person.isOnline ? "Online" : new Date(person.lastSeen).toISOString().replace('T', ' ').substr(0, 19)+" "+getAMorPM());
+    setUserState(person.isOnline ? "Online" : "Last Online at "+new Date(person.lastSeen).toISOString().replace('T', ' ').substr(0, 19)+" "+getAMorPM());
   }, [person]);
 
   useEffect(() => {
