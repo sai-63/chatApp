@@ -87,8 +87,8 @@ class SignalRService {
 
   setupListeners() {
     this.connection.on("ReceiveMessage", (chat) => {
-      if ((this.userId === chat.senderId && this.receiverId === chat.receiverId) || 
-          (this.receiverId === chat.senderId && this.userId === chat.receiverId)) {
+      if ((this.userId === chat.senderId && this.receiverId === chat.receiverId) ||
+        (this.receiverId === chat.senderId && this.userId === chat.receiverId)) {
         if (this.userId === chat.receiverId) {
           this.readMessage(chat.senderId, [chat.messageId]);
         }
@@ -125,24 +125,24 @@ class SignalRService {
       }
     });
 
-    this.connection.on("UserOffline", (username) => {
+    this.connection.on("UserOffline", (username,time) => {
       if (this.offlineUsersCallback) {
         this.offlineUsersCallback(username);
       }
       if (this.displayOfflineCallback) {
-        this.displayOfflineCallback(username);
+        this.displayOfflineCallback(username,time);
       }
     });
 
-    this.connection.on("IncrementUnseenMessages", (username,seen=null) => {
+    this.connection.on("IncrementUnseenMessages", (username, seen = null) => {
       if (this.unseenMessagesCallback) {
-        this.unseenMessagesCallback(username,seen);
+        this.unseenMessagesCallback(username, seen);
       }
     });
 
-    this.connection.on("SortChats", (Username,timestamp) => {
+    this.connection.on("SortChats", (Username, timestamp) => {
       if (this.sortChatsCallback) {
-        this.sortChatsCallback(Username,timestamp);
+        this.sortChatsCallback(Username, timestamp);
       }
     });
   }
@@ -160,15 +160,19 @@ class SignalRService {
 
   userOffline() {
     if (this.connection) {
-      this.connection.invoke("UserOffline", this.username)
+      const nowUtc = new Date();
+        nowUtc.setUTCHours(nowUtc.getUTCHours() + 5);
+        nowUtc.setUTCMinutes(nowUtc.getUTCMinutes() + 30);
+        const istTimeString = nowUtc.toISOString();
+      this.connection.invoke("UserOffline", this.username, istTimeString)
         .catch(err => console.error(err.toString()));
+      axios.post(`http://localhost:5290/UserOffline?userName=${this.username}&time=${istTimeString}`)
+        .then((response) => {
+          console.log(response.data);
+        })
+        .catch(err => console.error(err.toString()));
+      this.connection.stop();
     }
-    axios.post(`http://localhost:5290/UserOffline?userName=${this.username}`)
-      .then((response) => {
-        console.log(response.data);
-      })
-      .catch(err => console.error(err.toString()));
-    this.connection.stop();
   }
 
   changeReceiver(receiverId) {
@@ -240,7 +244,7 @@ class SignalRService {
     }
   }
 
-  incrementUnseenMessages(receiverId,username,seen=null){
+  incrementUnseenMessages(receiverId, username, seen = null) {
     this.ensureConnection();
     if (this.connection) {
       this.connection.invoke("IncrementUnseenMessages", receiverId, username, seen)
@@ -250,10 +254,10 @@ class SignalRService {
     }
   }
 
-  sortChats(receiverId,Username,timestamp){
+  sortChats(receiverId, Username, timestamp) {
     this.ensureConnection();
     if (this.connection) {
-      this.connection.invoke("SortChats", receiverId,Username,timestamp)
+      this.connection.invoke("SortChats", receiverId, Username, timestamp)
         .catch(err => console.error(err.toString()));
     } else {
       console.error("SignalR connection is not established.");

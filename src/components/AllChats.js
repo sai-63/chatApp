@@ -79,7 +79,10 @@ function AllChats({ show, setShow, message, setMessage, person, showPerson, user
 
             const lastMessage = messagesOnLastDate[messagesOnLastDate.length - 1];
             if(lastMessage.timestamp === Timestamp){
-              return new Date(messagesOnLastDate[messagesOnLastDate.length - 2].timestamp).getTime();
+              if(messagesOnLastDate.length>1){
+                return new Date(messagesOnLastDate[messagesOnLastDate.length - 2].timestamp).getTime();
+              }
+              return 0;
             }
             return new Date(lastMessage.timestamp).getTime();
           }

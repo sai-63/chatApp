@@ -21,6 +21,14 @@ function Register() {
   let [show, setShow] = useState(false);
   let [repeatShow, setRepeatShow] = useState(false);
 
+  function getLastSeen(){
+    const nowUtc = new Date();
+nowUtc.setUTCHours(nowUtc.getUTCHours() + 5);
+nowUtc.setUTCMinutes(nowUtc.getUTCMinutes() + 30);
+const istTimeString = nowUtc.toISOString();
+return istTimeString;
+  }
+
   function submitRegister(e) {
     const url = 'http://localhost:5290/Signup';
     const data = {
@@ -29,7 +37,8 @@ function Register() {
       Password: password,
       Email: email,
       Nickname: nickname,
-      IsOnline:true,
+      IsOnline: false,
+      LastSeen: getLastSeen(),
       Friends: []
     };
 
