@@ -9,17 +9,17 @@ import socket from "./socket";
 function Header({ person, showPerson, setSearch }) {
   const [iconActive, setIconActive] = useState(true);
   const [typing, setTyping] = useState(null);
-  const [userState, setUserState] = useState(person.isOnline ? "Online" : "Offline");
+  const [userState, setUserState] = useState(person.isOnline ? "Online" : "Last Online at "+new Date(person.lastSeen).toISOString().replace('T', ' ').substr(0, 19)+" "+getAMorPM(person.lastseen));
 
   useEffect(() => {
-    setUserState(person.isOnline ? "Online" : "Offline");
-  }, [person.isOnline]);
+    setUserState(person.isOnline ? "Online" : "Last Online at "+new Date(person.lastSeen).toISOString().replace('T', ' ').substr(0, 19)+" "+getAMorPM());
+  }, [person]);
 
   useEffect(() => {
     const handleTyping = (data) => {
       setTyping(data);
     };
-    
+
     socket.on("typing", handleTyping);
 
     return () => {
@@ -37,16 +37,24 @@ function Header({ person, showPerson, setSearch }) {
 
     SignalRService.setDisplayOnlineCallback(handleDisplayOnline);
 
-    const handleDisplayOffline = (username) => {
+    const handleDisplayOffline = (username, time) => {
       console.log("handle display offline is working..........");
       if (username === person.username) {
-        showPerson(prevPerson => ({ ...prevPerson, isOnline: false }));
+        showPerson(prevPerson => ({ ...prevPerson, isOnline: false, lastSeen: time }));
       }
     };
+    
 
     SignalRService.setDisplayOfflineCallback(handleDisplayOffline);
 
   }, [person.username, showPerson]);
+
+  function getAMorPM() {
+    let currentDate = new Date(person.lastSeen);
+    let hours = currentDate.getUTCHours();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    return ampm;
+  }
 
   return (
     <div
