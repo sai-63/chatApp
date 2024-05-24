@@ -1,11 +1,11 @@
-import axios from "axios";
+import axios, { all } from "axios";
 import React, { useEffect, useState } from "react";
 import { AiFillCloseCircle, AiOutlineSearch } from "react-icons/ai";
 import { CgProfile } from "react-icons/cg";
 import { NavLink } from "react-router-dom";
 import SignalRService from "./SignalRService";
 
-function AllChats({ show, setShow, message, setMessage, person, showPerson ,userIds, setUserIds,unseenMessages,setUnseenMessages}) {
+function AllChats({ show, setShow, message, setMessage, person, showPerson, userIds, setUserIds, allMessages, unseenMessages, setUnseenMessages }) {
   const [host, setHost] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [username, setUsername] = useState("");
@@ -37,30 +37,67 @@ function AllChats({ show, setShow, message, setMessage, person, showPerson ,user
     });
 
     SignalRService.setOfflineUsersCallback((username) => {
-      console.log("A user went offlineeeeeeeeee:",username);
-      setUserIds((userIds) => 
+      console.log("A user went offlineeeeeeeeee:", username);
+      setUserIds((userIds) =>
         userIds.map(user =>
           user.username === username ? { ...user, isOnline: false } : user
         )
       );
     });
 
-    SignalRService.setIncrementUnseenMessagesCallback((username,seen) => {
-      if(seen===null){
+    SignalRService.setIncrementUnseenMessagesCallback((username, seen) => {
+      if (seen === null) {
         setUnseenMessages((unseenMessages) => ({
           ...unseenMessages,
           [username]: (unseenMessages[username] || 0) + 1,
         }));
-      }else{
+      } else {
         setUnseenMessages((unseenMessages) => ({
           ...unseenMessages,
           [username]: 0,
-        }));      
+        }));
       }
-      console.log("Unseen counttttttttttttttttttttttttttttttttttttttttttttttttttttt :",unseenMessages[username]);
     });
 
-  }, []);
+    SignalRService.setSortChatsCallback((Username, Timestamp) => {
+      console.log("Invoked SetSortChatsCallbackkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk");
+      console.log("All Messagessssss:", allMessages);
+      setUserIds((userIds) => {
+        const getLastMessageTime = (username) => {
+          if (username === Username) {
+            return new Date(Timestamp).getTime();
+          } else {
+            const userMessages = allMessages[username];
+            if (!userMessages) return 0;
+
+            const dateKeys = Object.keys(userMessages).sort();
+            if (dateKeys.length === 0) return 0;
+
+            const lastDateKey = dateKeys[dateKeys.length - 1];
+            const messagesOnLastDate = userMessages[lastDateKey];
+            if (!messagesOnLastDate || messagesOnLastDate.length === 0) return 0;
+
+            const lastMessage = messagesOnLastDate[messagesOnLastDate.length - 1];
+            if(lastMessage.timestamp === Timestamp){
+              return new Date(messagesOnLastDate[messagesOnLastDate.length - 2].timestamp).getTime();
+            }
+            return new Date(lastMessage.timestamp).getTime();
+          }
+        };
+
+        const newUserIds = [...userIds].sort((a, b) => {
+          const timeA = getLastMessageTime(a.username);
+          const timeB = getLastMessageTime(b.username);
+          return timeB - timeA;
+        });
+
+        console.log("New User Ids :", newUserIds);
+        return newUserIds;
+      });
+    });
+
+
+  }, [allMessages]);
 
   const handleInputChange = (event) => {
     const newValue = event.target.value;
@@ -100,13 +137,36 @@ function AllChats({ show, setShow, message, setMessage, person, showPerson ,user
         console.log("Posted Successfully", response.data);
       })
       .catch((err) => console.log(err));
-    SignalRService.incrementUnseenMessages(host,obj.username,"seen");
+    SignalRService.incrementUnseenMessages(host, obj.username, "seen");
     showPerson(obj);
   };
 
   const handleShow = () => {
     setShow(false);
     setMessage("");
+  };
+
+  const getLastMessage = (username) => {
+    const userMessages = allMessages[username];
+    console.log("All Masssssss", allMessages);
+    console.log("User Masssssss", userMessages);
+    if (userMessages) {
+      const dateKeys = Object.keys(userMessages).sort();
+
+      if (dateKeys.length > 0) {
+        const lastDateKey = dateKeys[dateKeys.length - 1];
+        const messagesOnLastDate = userMessages[lastDateKey];
+
+        if (messagesOnLastDate && messagesOnLastDate.length > 0) {
+          if (messagesOnLastDate[messagesOnLastDate.length - 1].senderId === host) {
+            return "sent : " + messagesOnLastDate[messagesOnLastDate.length - 1].message;
+          } else {
+            return "received : " + messagesOnLastDate[messagesOnLastDate.length - 1].message;
+          }
+        }
+      }
+    }
+    return '';
   };
 
   return (
@@ -146,6 +206,9 @@ function AllChats({ show, setShow, message, setMessage, person, showPerson ,user
                   <p className="lead ms-2 text-white fs-4 d-inline"> {obj.nickname} </p>
                   <p className="lead ms-2 text-white fs-4 d-inline"> {obj.isOnline ? "Online" : "Offline"} </p>
                   <p className="lead ms-2 text-white fs-4 d-inline"> {unseenMessages[obj.username]} </p>
+                  <p className="lead ms-2 text-white fs-6 d-inline ms-auto mt-5 mb-0">
+                    {getLastMessage(obj.username)}
+                  </p>
                   <p className="lead ms-2 text-white fs-6 d-inline ms-auto mt-5 mb-0">
                     {obj.username}
                   </p>

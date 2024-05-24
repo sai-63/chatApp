@@ -17,6 +17,7 @@ class SignalRService {
     this.offlineUsersCallback = null;
     this.displayOfflineCallback = null;
     this.unseenMessagesCallback = null;
+    this.sortChatsCallback = null;
 
     window.addEventListener("beforeunload", (event) => {
       if (this.connection) {
@@ -138,6 +139,12 @@ class SignalRService {
         this.unseenMessagesCallback(username,seen);
       }
     });
+
+    this.connection.on("SortChats", (Username,timestamp) => {
+      if (this.sortChatsCallback) {
+        this.sortChatsCallback(Username,timestamp);
+      }
+    });
   }
 
   ensureConnection() {
@@ -243,6 +250,16 @@ class SignalRService {
     }
   }
 
+  sortChats(receiverId,Username,timestamp){
+    this.ensureConnection();
+    if (this.connection) {
+      this.connection.invoke("SortChats", receiverId,Username,timestamp)
+        .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+
   setReceiveMessageCallback(callback) {
     this.receiveMessageCallback = callback;
   }
@@ -277,6 +294,10 @@ class SignalRService {
 
   setIncrementUnseenMessagesCallback(callback) {
     this.unseenMessagesCallback = callback;
+  }
+
+  setSortChatsCallback(callback) {
+    this.sortChatsCallback = callback;
   }
 
 }

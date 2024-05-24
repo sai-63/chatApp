@@ -8,9 +8,10 @@ import { BsEmojiSunglasses } from "react-icons/bs";
 import { GrAttachment } from "react-icons/gr";
 import SignalRService from './SignalRService';
 
-function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessages, allMessages, setAllMessages}) {
+function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessages, allMessages, setAllMessages }) {
   let { handleSubmit } = useForm();
   const host = localStorage.getItem("userId");
+  const username = localStorage.getItem("username");
   let [value, setValue] = useState("");
   let [disabled, setDisabled] = useState(false);
   let [file, setFile] = useState(null);
@@ -21,103 +22,105 @@ function Footer({ person ,messageObj, setMessageObj, prevMessages , setPrevMessa
 
   function generateUUID() {
     // Generate a random UUID
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0,
-            v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
-}
-
-async function submitMessage() {
-  setSpin(true);
-  value = value.trimStart();
-  const messageId = generateUUID();
-  const timestamp = new Date().toISOString();
-  const formData = new FormData();
-  formData.append('SenderId', host);
-  formData.append('ReceiverId', person.id);
-  formData.append('Message', value);
-  formData.append('MessageId', messageId);
-  formData.append('Timestamp', timestamp);
-
-  let data = {
-    messageId: messageId,
-    senderId: host,
-    receiverId: person.id,
-    message: value,
-    isRead: false,
-    senderRemoved: false,
-    timestamp: timestamp,
-    fileContent: null,
-    fileName: null,
-    fileType: null,
-    fileSize: null
-  };
-
-  console.log(host);
-  console.log(person.id);
-  for (let pair of formData.entries()) {
-    console.log(pair[0] + ', ' + pair[1]);
-  }
-
-  if (file !== null) {
-    formData.append("File", file);
-
-    data = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = function (event) {
-        const arrayBuffer = event.target.result;
-        const uint8Array = new Uint8Array(arrayBuffer);
-        const base64String = btoa(String.fromCharCode.apply(null, uint8Array));
-        data.fileContent = base64String;
-        data.fileName = file.name;
-        data.fileType = file.type;
-        data.fileSize = file.size;
-        resolve(data); // Resolve the promise with updated data
-      };
-      reader.onerror = function (error) {
-        reject(error); // Reject the promise if there's an error
-      };
-      reader.readAsArrayBuffer(file);
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0,
+        v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
     });
   }
 
-  if (value.length !== 0) {
-    axios.post('http://localhost:5290/Chat/Send Message', formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    })
-      .then((res) => {
-        setValue("");
-      //   setSpin(false);
-      //   alert('Message successfully sent');
-      //   const chatDate = new Date(data.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
+  async function submitMessage() {
+    setSpin(true);
+    value = value.trimStart();
+    const messageId = generateUUID();
+    const timestamp = new Date().toISOString();
+    const formData = new FormData();
+    formData.append('SenderId', host);
+    formData.append('ReceiverId', person.id);
+    formData.append('Message', value);
+    formData.append('MessageId', messageId);
+    formData.append('Timestamp', timestamp);
 
-      // // setAllMessages(allMessages => {
-      // //   const updatedMessages = { ...allMessages[person.username] };
+    let data = {
+      messageId: messageId,
+      senderId: host,
+      receiverId: person.id,
+      message: value,
+      isRead: false,
+      senderRemoved: false,
+      timestamp: timestamp,
+      fileContent: null,
+      fileName: null,
+      fileType: null,
+      fileSize: null
+    };
 
-      // //   if (updatedMessages[chatDate]) {
-      // //     updatedMessages[chatDate] = [...updatedMessages[chatDate], data]; // Append chat to existing date's messages
-      // //   } else {
-      // //     updatedMessages[chatDate] = [data]; // Create a new list for the date if it doesn't exist
-      // //   }
+    console.log(host);
+    console.log(person.id);
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ', ' + pair[1]);
+    }
 
-      //   return {
-      //     ...allMessages,
-      //     [person.username]: updatedMessages
-      //   };
-      // });
-      })
-      .catch((error) => {
-        console.log(error);
+    if (file !== null) {
+      formData.append("File", file);
+
+      data = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const arrayBuffer = event.target.result;
+          const uint8Array = new Uint8Array(arrayBuffer);
+          const base64String = btoa(String.fromCharCode.apply(null, uint8Array));
+          data.fileContent = base64String;
+          data.fileName = file.name;
+          data.fileType = file.type;
+          data.fileSize = file.size;
+          resolve(data); // Resolve the promise with updated data
+        };
+        reader.onerror = function (error) {
+          reject(error); // Reject the promise if there's an error
+        };
+        reader.readAsArrayBuffer(file);
       });
-    console.log(host," is sending to the Person.id:", person.id);
-    SignalRService.sendMessage(host, data, person.id); // Send message via SignalR
-    SignalRService.incrementUnseenMessages(person.id,localStorage.getItem("username"));
-    setDisabled(false);
+    }
+
+    if (value.length !== 0) {
+      axios.post('http://localhost:5290/Chat/Send Message', formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+        .then((res) => {
+          setValue("");
+          //   setSpin(false);
+          //   alert('Message successfully sent');
+          //   const chatDate = new Date(data.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
+
+          // // setAllMessages(allMessages => {
+          // //   const updatedMessages = { ...allMessages[person.username] };
+
+          // //   if (updatedMessages[chatDate]) {
+          // //     updatedMessages[chatDate] = [...updatedMessages[chatDate], data]; // Append chat to existing date's messages
+          // //   } else {
+          // //     updatedMessages[chatDate] = [data]; // Create a new list for the date if it doesn't exist
+          // //   }
+
+          //   return {
+          //     ...allMessages,
+          //     [person.username]: updatedMessages
+          //   };
+          // });
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+      console.log(host, " is sending to the Person.id:", person.id);
+      SignalRService.sendMessage(host, data, person.id); // Send message via SignalR
+      SignalRService.incrementUnseenMessages(person.id, username);
+      SignalRService.sortChats(person.id, username, timestamp);
+      SignalRService.sortChats(host, person.username, timestamp);
+      setDisabled(false);
+    }
   }
-}
 
   function handleChange(event) {
     setValue(event.target.value);
@@ -131,7 +134,7 @@ async function submitMessage() {
     setValue(event.target.files[0].name);
     setDisabled(true);
   }
-  
+
   return (
     <form
       className="footer d-flex align-items-center justify-content-center bg-dark bg-opacity-10"
@@ -139,7 +142,7 @@ async function submitMessage() {
       onSubmit={handleSubmit(submitMessage)}
     >
       <div className="emojiAndFile mt-1 ms-4 d-flex">
-        <OverlayTrigger  trigger={"click"}  key={"top"}  placement={"top"}  rootClose={true}
+        <OverlayTrigger trigger={"click"} key={"top"} placement={"top"} rootClose={true}
           overlay={
             <Popover>
               <EmojiPicker onEmojiClick={handleEmoji} />
@@ -183,18 +186,18 @@ async function submitMessage() {
           onChange={handleChange}
         />
       </div>
-      
-          <Button
-            className="btn btn-success pt-0 pb-1 mt-2 ms-2"
-            onClick={submitMessage}
-          >
-            <AiOutlineSend className="fs-6" />
-          </Button>
-        
-            
-        
-        
-  
+
+      <Button
+        className="btn btn-success pt-0 pb-1 mt-2 ms-2"
+        onClick={submitMessage}
+      >
+        <AiOutlineSend className="fs-6" />
+      </Button>
+
+
+
+
+
     </form>
   );
 }

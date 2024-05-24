@@ -19,7 +19,8 @@ import { faCheckDouble } from '@fortawesome/free-solid-svg-icons';
 import SignalRService from './SignalRService';
 
 function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessages, allMessages, setAllMessages }) {
-  let host = localStorage.getItem("userId");
+  const host = localStorage.getItem("userId");
+  const username = localStorage.getItem("username");
   let [isLoaded, setIsLoaded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editObject, setEditObject] = useState({});
@@ -46,6 +47,8 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
         console.log(err.message);
       });
     SignalRService.removeMessage(person.id, msgId, chatDate);
+    SignalRService.sortChats(person.id,null,deleteObject.timestamp);
+    SignalRService.sortChats(host,null,deleteObject.timestamp);
     handleDeleteClose();
   };
 
@@ -80,6 +83,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       .catch((err) => {
         console.log(err.message);
       });
+      SignalRService.sortChats(host,null,deleteObject.timestamp);
     handleDeleteClose();
   };
 
