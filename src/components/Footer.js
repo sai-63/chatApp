@@ -1,201 +1,127 @@
 import axios from "axios";
 import EmojiPicker from "emoji-picker-react";
-import React, { createElement, useEffect, useState ,useContext} from "react";
+import React, { createElement, useEffect, useState } from "react";
 import { Button, OverlayTrigger, Popover } from "react-bootstrap";
-import Spinner from "react-bootstrap/Spinner";
 import { useForm } from "react-hook-form";
 import { AiOutlineSend } from "react-icons/ai";
 import { BsEmojiSunglasses } from "react-icons/bs";
-import { GiCancel } from "react-icons/gi";
 import { GrAttachment } from "react-icons/gr";
-import socket from "./socket";
 import SignalRService from './SignalRService';
-import { UserContext } from "./UserContext";
 
-function Footer({ person ,grpperson,messageObj, setMessageObj, prevMessages , setPrevMessages,finalmsg,setFinalMsg}) {
+function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessages, allMessages, setAllMessages }) {
   let { handleSubmit } = useForm();
-  let [host, setHost] = useState("");
-  let [receiver,setReciever] = useState("");
+  const host = localStorage.getItem("userId");
+  const username = localStorage.getItem("username");
   let [value, setValue] = useState("");
   let [disabled, setDisabled] = useState(false);
   let [file, setFile] = useState(null);
   let [spin, setSpin] = useState(false);
   let data = {};
-  let dataa={}
   const [message, setMessage] = useState('');
-  const [userr, setUserr] = useState('');
-  const { user, setUser } = useContext(UserContext);
-  
-  useEffect(()=>{
-    if(person.id!=null){
-      localStorage.setItem("reciever",person.id);
-    }else{
-      localStorage.setItem("reciever",grpperson.id);
-    }
-    startConnection();
-  },[person]);
-
-  useEffect(() => {
-    SignalRService.setReceiveMessageCallback((chat) => {
-      const chatDate = new Date(chat.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
-      setPrevMessages(prevMessages => {
-        const updatedMessages = { ...prevMessages };
-        if (updatedMessages[chatDate]) {
-          updatedMessages[chatDate].push(chat); // Append chat to existing date's messages
-        } else {
-          updatedMessages[chatDate] = [chat]; // Create a new list for the date if it doesn't exist
-        }
-        console.log("gone till setrec",updatedMessages)
-        return updatedMessages;
-      });
-    });
-  }, []);
-
-  useEffect(() => {
-    SignalRService.setReceiveGroupMessageCallback((group) => {
-      console.log("Entered grp setrece ",group,finalmsg)
-      const chatDate = new Date(group.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
-      setFinalMsg((finalmsg) => {
-        const updatedGrpMessages = [ ...finalmsg ];
-        if (updatedGrpMessages[chatDate]) {
-          updatedGrpMessages[chatDate].push(group); // Append chat to existing date's messages
-        } else {
-          updatedGrpMessages[chatDate] = [group]; // Create a new list for the date if it doesn't exist
-        }
-        console.log("gone till setrec",group,updatedGrpMessages,finalmsg)
-        return updatedGrpMessages;
-      });
-    });
-  }, []);
-
-  
-  // useEffect(() => {
-  //   SignalRService.setRemoveMessageCallback((id) => {
-  //     // Function to remove the chat with matching messageId
-  //     const removeMessage = (messageId) => {
-  //       setPrevMessages(prevMessages => prevMessages.filter(message => message.messageId !== messageId));
-  //     };
-  
-  //     // Call the function to remove the message with the provided id
-  //     removeMessage(id);
-  //   });
-  // }, [prevMessages]);
-
-  function startConnection() {
-
-    console.log("HI");
-    SignalRService.startConnection();
-    console.log("Reached");
-    setHost(localStorage.getItem("userId"));
-    // console.log("Prev in signalR:",prevMessages);
-    // console.log("Bye");
-
-  }
+  const [user, setUser] = useState('');
 
   function generateUUID() {
     // Generate a random UUID
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0,
-            v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });    
-}
-function ggenerateUUID() {
-  // Generate a random UUID
-  return 'xxxxxx-xxxx-xxxx'.replace(/[xy]/g, function(c) {
-      var r = Math.random() * 16 | 0;
-      return r.toString(16);
-  });
-}
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0,
+        v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
 
-  function submitMessage() {
+  async function submitMessage() {
     setSpin(true);
     value = value.trimStart();
-    if(user.userType==="user"){
     const messageId = generateUUID();
-    data = {
-      messageId:messageId,
-      senderId:host,
-      receiverId:person.id,
+    const timestamp = new Date().toISOString();
+    const formData = new FormData();
+    formData.append('SenderId', host);
+    formData.append('ReceiverId', person.id);
+    formData.append('Message', value);
+    formData.append('MessageId', messageId);
+    formData.append('Timestamp', timestamp);
+
+    let data = {
+      messageId: messageId,
+      senderId: host,
+      receiverId: person.id,
       message: value,
-      Timestamp: new Date().toISOString()
+      isRead: false,
+      senderRemoved: false,
+      timestamp: timestamp,
+      fileContent: null,
+      fileName: null,
+      fileType: null,
+      fileSize: null
+    };
+
+    console.log(host);
+    console.log(person.id);
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ', ' + pair[1]);
     }
-    if (value.length!==0) {
-      axios.post('http://localhost:5290/Chat/Send Message', data)
+
+    if (file !== null) {
+      formData.append("File", file);
+
+      data = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const arrayBuffer = event.target.result;
+          const uint8Array = new Uint8Array(arrayBuffer);
+          const base64String = btoa(String.fromCharCode.apply(null, uint8Array));
+          data.fileContent = base64String;
+          data.fileName = file.name;
+          data.fileType = file.type;
+          data.fileSize = file.size;
+          resolve(data); // Resolve the promise with updated data
+        };
+        reader.onerror = function (error) {
+          reject(error); // Reject the promise if there's an error
+        };
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    if (value.length !== 0) {
+      axios.post('http://localhost:5290/Chat/Send Message', formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
         .then((res) => {
           setValue("");
-          setSpin(false);
-          alert('Message successfully sent');
-          console.log(res.data);
-          console.log(host);
-          setPrevMessages([...prevMessages, data]);
-          // console.log(prevMessages,data);
-          // console.log([...prevMessages,data])
-          // console.log("Prev in footer",prevMessages);
+          //   setSpin(false);
+          //   alert('Message successfully sent');
+          //   const chatDate = new Date(data.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
+
+          // // setAllMessages(allMessages => {
+          // //   const updatedMessages = { ...allMessages[person.username] };
+
+          // //   if (updatedMessages[chatDate]) {
+          // //     updatedMessages[chatDate] = [...updatedMessages[chatDate], data]; // Append chat to existing date's messages
+          // //   } else {
+          // //     updatedMessages[chatDate] = [data]; // Create a new list for the date if it doesn't exist
+          // //   }
+
+          //   return {
+          //     ...allMessages,
+          //     [person.username]: updatedMessages
+          //   };
+          // });
         })
         .catch((error) => {
           console.log(error);
-        })
-      console.log("Person.id:",person.id);
-      // SignalRService.sendMessage(host, data, host);
+        });
+      console.log(host, " is sending to the Person.id:", person.id);
       SignalRService.sendMessage(host, data, person.id); // Send message via SignalR
+      SignalRService.incrementUnseenMessages(person.id, username);
+      SignalRService.sortChats(person.id, username, timestamp);
+      SignalRService.sortChats(host, person.username, timestamp);
+      setDisabled(false);
     }
-    }else{
-      console.log("Entered sendgrpmsgs hoho")
-    const messageId = ggenerateUUID();
-    dataa = {
-      _id:messageId,
-      senderId:host,
-      message: value,
-      // Timestamp: new Date().toISOString()
-      timestamp: new Date().toISOString()
-      //const date = new Date(msg.timestamp).toLocaleDateString();
-      }
-    if (value.length!==0) {
-      const xy={groupname:grpperson.name,messages:dataa}
-      console.log("The one we have left is ",xy,xy.groupname)
-      axios.post("http://localhost:5290/Chat/SendGrpMessage?groupname="+grpperson.name,dataa)
-        .then((res) => {
-          setValue("");
-          setSpin(false);
-          alert('Grp Message successfully sent');
-          console.log(res.data);
-          console.log(host);
-        //   setFinalMsg((finalmsg) => {
-        //     const chatDate = new Date(dataa.Timestamp).toISOString().split('T')[0];
-        //     const updatedGrpMessages = { ...finalmsg };
-        //     if (updatedGrpMessages[chatDate]) {
-        //       updatedGrpMessages[chatDate].push(dataa);
-        //     } else {
-        //       updatedGrpMessages[chatDate] = [dataa];
-        //     }
-        //     return updatedGrpMessages;
-        //   });
-        // })
-        setFinalMsg((finalmsg)=>[...finalmsg, dataa]);
-      })
-    }
-          // console.log(prevMessages,data);
-          // console.log([...prevMessages,data])
-          // console.log("Prev in footer",prevMessages);
-        // .catch((error) => {
-        //   console.log(error);
-        // })
-      console.log("Grpperson id:",grpperson.id);
-      // SignalRService.sendMessage(host, data, host);
-      console.log("sending to bakend",localStorage.getItem("groupid"),host, dataa,finalmsg)
-      SignalRService.sendMessageToGroup(localStorage.getItem("groupid"),host, dataa); // Send message via SignalR
-  }
-    
   }
 
-  const handleMessageChange = (event) => {
-    setMessage(event.target.value);
-  };
-
-  const handleUserChange = (event) => {
-    setUserr(event.target.value);
-  };
   function handleChange(event) {
     setValue(event.target.value);
   }
@@ -209,56 +135,6 @@ function ggenerateUUID() {
     setDisabled(true);
   }
 
-  function submitFile() {
-    if (file) {
-        SignalRService.sendFile(file);
-    }
-  }
-
-  // function submitFile(event){
-  //   SignalRService.sendFile(event);
-  // }
-
-  // function downloadFile(event){
-  //   SignalRService.downloadFile(event);
-  // }
-  /*function submitFile() {
-    let obj = {};
-    setSpin(true);
-
-    obj.senderId = host;
-    obj.receiverId = person.id;
-    obj.timestamp = Date.now()
-
-    obj.fileName = file.name;
-
-    //obj.bfile = bFile;
-
-    let fd = new FormData();
-
-    fd.append("details", JSON.stringify(obj));
-
-    fd.append("file", file);
-
-    axios
-      .post("https://chtvthme.onrender.com/conversation-api/send-file", fd)
-      .then((res) => {
-        setValue("");
-        setSpin(false);
-        setDisabled(false);
-        const socketObj = {};
-        socketObj.senderId = host;
-        socketObj.receiverId = person.userid;
-        socket.emit("message-sent", socketObj);
-      })
-      .catch((err) => console.log(err.message));
-  }*/
-
-  function cancelFile() {
-    setValue("");
-    setDisabled(false);
-  }
-
   return (
     <form
       className="footer d-flex align-items-center justify-content-center bg-dark bg-opacity-10"
@@ -266,7 +142,7 @@ function ggenerateUUID() {
       onSubmit={handleSubmit(submitMessage)}
     >
       <div className="emojiAndFile mt-1 ms-4 d-flex">
-        <OverlayTrigger  trigger={"click"}  key={"top"}  placement={"top"}  rootClose={true}
+        <OverlayTrigger trigger={"click"} key={"top"} placement={"top"} rootClose={true}
           overlay={
             <Popover>
               <EmojiPicker onEmojiClick={handleEmoji} />
@@ -285,8 +161,7 @@ function ggenerateUUID() {
           rootClose={true}
           overlay={
             <Popover className="d-block">
-              <input type="file" id="fileInput" onchange={submitFile} />
-              <button onclick={SignalRService.downloadFile}>Download File</button>
+              <input type="file" onInput={handleFile} />
             </Popover>
           }
         >
@@ -311,18 +186,18 @@ function ggenerateUUID() {
           onChange={handleChange}
         />
       </div>
-      
-          <Button
-            className="btn btn-success pt-0 pb-1 mt-2 ms-2"
-            onClick={submitMessage}
-          >
-            <AiOutlineSend className="fs-6" />
-          </Button>
-        
-            
-        
-        
-  
+
+      <Button
+        className="btn btn-success pt-0 pb-1 mt-2 ms-2"
+        onClick={submitMessage}
+      >
+        <AiOutlineSend className="fs-6" />
+      </Button>
+
+
+
+
+
     </form>
   );
 }

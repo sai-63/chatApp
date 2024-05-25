@@ -1,40 +1,54 @@
-import React, { useContext, useState } from "react";
+import React, { useState, useEffect , useContext } from "react";
 import { OverlayTrigger, Popover } from "react-bootstrap";
 import { AiOutlineSearch, AiOutlineCloseCircle } from "react-icons/ai";
 import { BiArrowBack } from "react-icons/bi";
 import { FiMoreVertical } from "react-icons/fi";
+import SignalRService from "./SignalRService";
 import socket from "./socket";
-import { useEffect } from "react";
 import { UserContext } from "./UserContext";
-function Header({ person, showPerson, setSearch,grpperson,showGrpPerson}) {
+
+function Header({ person, showPerson, setSearch , grpperson , showGrpPerson }) {
   const [iconActive, setIconActive] = useState(true);
-  const [onlineUsers, setOnlineUsers] = useState([]);
   const [typing, setTyping] = useState(null);
-  const [host, setHost] = useState("");
+  const [userState, setUserState] = useState(person.isOnline ? "Online" : "Offline");
   const { user, setUser } = useContext(UserContext);
 
-  // socket.on("allusers", (allUsers) => {
-  //   setOnlineUsers(allUsers);
-  // });
+  useEffect(() => {
+    setUserState(person.isOnline ? "Online" : "Offline");
+  }, [person.isOnline]);
 
-  // socket.on("typing", (data) => {
-  //   setTyping(data);
+  useEffect(() => {
+    const handleTyping = (data) => {
+      setTyping(data);
+    };
+    
+    socket.on("typing", handleTyping);
 
-  
+    return () => {
+      socket.off("typing", handleTyping);
+    };
+  }, []);
 
-  
-  // });
+  useEffect(() => {
+    const handleDisplayOnline = (username) => {
+      console.log("handle display online is working..........");
+      if (username === person.username) {
+        showPerson(prevPerson => ({ ...prevPerson, isOnline: true }));
+      }
+    };
 
-  // socket.on("not-typing", (data) => {
-  //   setTyping(null);
-  // });
+    SignalRService.setDisplayOnlineCallback(handleDisplayOnline);
 
-  // useEffect(() => {
-  //   socket.emit("reload");
-  //   const host = localStorage.getItem("user");
-  //   setHost(host);
-  // }, []);
+    const handleDisplayOffline = (username) => {
+      console.log("handle display offline is working..........");
+      if (username === person.username) {
+        showPerson(prevPerson => ({ ...prevPerson, isOnline: false }));
+      }
+    };
 
+    SignalRService.setDisplayOfflineCallback(handleDisplayOffline);
+
+  }, [person.username, showPerson]);
 
   return (
     <div
@@ -43,22 +57,22 @@ function Header({ person, showPerson, setSearch,grpperson,showGrpPerson}) {
     >
       <div className="d-flex align-items-center">
         <BiArrowBack
-          onClick={() => showPerson({}) || showGrpPerson({})}
+          onClick={() => showPerson({})}
           className=""
           style={{ cursor: "pointer" }}
         />
-        {console.log("Using usecontext",user)}
         <div className="ms-4 p-0">
-          <span className="fs-5 p-0 m-0">          
-          {/* {person.username && !fstate?  */}
-          {user.userType=="user"? person.username?.charAt(0).toUpperCase() +person.username?.slice(1)
-            :grpperson.name?.charAt(0).toUpperCase() +grpperson.name?.slice(1)}
-            {/* // (person.username?.charAt(0).toUpperCase() +
-            //   person.username?.slice(1)):
-            // grpperson.name?.charAt(0).toUpperCase() +grpperson.name?.slice(1)
-          } */}
+          <span className="fs-5 p-0 m-0">
+          {user.userType=="user"? 
+            <div>{person.username?.charAt(0).toUpperCase() +person.username?.slice(1)}<p>{userState}</p></div>
+            :
+            <div>
+              <img src={grpperson.picUrl} alt={`${grpperson.name}'s photo`} 
+              style={{ width: '40px', height: '40px', borderRadius: '50%', marginRight: '10px' }} />
+              {grpperson.name?.charAt(0).toUpperCase() +grpperson.name?.slice(1)}
+            </div>
+          }
           </span>
-          
         </div>
       </div>
       <div className="ms-auto">
@@ -70,13 +84,9 @@ function Header({ person, showPerson, setSearch,grpperson,showGrpPerson}) {
             <Popover>
               <input
                 type="text"
-                name=""
-                id=""
                 className="form-control"
                 placeholder="Search Chat..."
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                }}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </Popover>
           }
@@ -100,7 +110,6 @@ function Header({ person, showPerson, setSearch,grpperson,showGrpPerson}) {
             )}
           </div>
         </OverlayTrigger>
-
         <FiMoreVertical className="m-2 fs-5" />
       </div>
     </div>
