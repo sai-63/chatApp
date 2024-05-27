@@ -4,7 +4,8 @@ import Footer from "./Footer";
 import Header from "./Header";
 import { set } from "react-hook-form";
 
-function Conversation({ setShow, setMessage, person, showPerson, allMessages, setAllMessages , grpperson, showGrpPerson}) {
+function Conversation({ setShow, setMessage, person, showPerson, allMessages, setAllMessages,allGMessages,setAllGMessages
+  , grpperson, showGrpPerson}) {
   const [search, setSearch] = useState("");
   const [prevMessages, setPrevMessages] = useState([]);
   const [finalmsg,setFinalMsg]=useState([]);
@@ -20,6 +21,8 @@ function Conversation({ setShow, setMessage, person, showPerson, allMessages, se
         setPrevMessages={setPrevMessages}
         allMessages={allMessages}
         setAllMessages={setAllMessages}
+        allGMessages={allGMessages}
+        setAllGMessages={setAllGMessages}
 
         grpperson={grpperson} 
         showGrpPerson={showGrpPerson}
@@ -27,7 +30,8 @@ function Conversation({ setShow, setMessage, person, showPerson, allMessages, se
         setFinalMsg={setFinalMsg}
       />
       <Footer person={person} prevMessages={prevMessages} setPrevMessages={setPrevMessages} allMessages={allMessages}
-        setAllMessages={setAllMessages} finalmsg={finalmsg} setFinalMsg={setFinalMsg}/>
+        setAllMessages={setAllMessages} allGMessages={allGMessages}
+        setAllGMessages={setAllGMessages} finalmsg={finalmsg} setFinalMsg={setFinalMsg}/>
     </>
   );
 }

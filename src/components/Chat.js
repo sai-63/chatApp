@@ -31,6 +31,7 @@ function Chat() {
           setUserIds(friendIds);
   
           const fetchMessagesForUsers = async () => {
+            console.log("Chat frnds userids -",userIds,friendIds)
             const newAllMessages = {};
             const newUnseenMessages = {};
             const newAllGMessages = {};
@@ -101,7 +102,8 @@ function Chat() {
               }
             }
             catch(error){console.log("error during username")}
-            console.log("Have grpmsgs as ",newAllGMessages)
+            console.log("Chat- allmessages ",allMessages)
+            console.log("Chat- grpmsgs as ",newAllGMessages)
             setAllGMessages(newAllGMessages);
           };
   
@@ -152,6 +154,8 @@ function Chat() {
             showPerson={showPerson}
             allMessages={allMessages}
             setAllMessages={setAllMessages}
+            allGMessages={allGMessages}
+            setAllGMessages={setAllGMessages}
             grpperson={grpperson}
             showGrpPerson={showGrpPerson}
           />

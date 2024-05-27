@@ -21,21 +21,22 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
   let [juser,setJuser]=useState([]);
   let [jmsgs,setJmsgs]=useState([]);
 
+  console.log("Allchats--> ",allMessages,allGMessages,userIds)
   useEffect(() => {
     const userId = localStorage.getItem("userId");
     const username = localStorage.getItem("username");
     setHost(userId);
     setUsername(username);
   }, []);
-  useEffect(() => {
-    const interval=setInterval(() => {
-    axios
-      .get("http://localhost:5290/Chat/GetUserGroups",{params:{username:username}})
-      .then((res) => setUserGroups(res.data))
-      .catch((err) => console.log(err));
-    },3000);
-    return ()=>clearInterval(interval);
-  },[username]);
+  // useEffect(() => {
+  //   const interval=setInterval(() => {
+  //   axios
+  //     .get("http://localhost:5290/Chat/GetUserGroups",{params:{username:username}})
+  //     .then((res) => setUserGroups(res.data))
+  //     .catch((err) => console.log(err));
+  //   },3000);
+  //   return ()=>clearInterval(interval);
+  // },[username]);
 
 
   useEffect(() => {
@@ -163,11 +164,12 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
   };
 
   const groupChat=(gobj)=>{
+    console.log("We got on clicking grp is ",gobj)
     setUser({ ...user, userType: "group" });
     localStorage.setItem("receiver",gobj.id)
     showGrpPerson(gobj);
     axios
-      .get("http://localhost:5290/Chat/Getgroupid",{params:{ggname:gobj.name}})
+      .get("http://localhost:5290/Chat/Getgroupid",{params:{gname:gobj.name}})
       .then((res)=>{
         console.log("Hooray",res.data);
         localStorage.setItem("groupid",res.data);
@@ -244,12 +246,13 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
         setJuser(res.data)
         console.log("In Getusersofgroup ",data.groupname,juser)
       })
-    axios
-      .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:data.groupname}})
-      .then((res)=>{
-        setJmsgs(res.data)
-        console.log("In Getgroupmessages ",data.groupname)
-      })
+    // axios
+    //   .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:data.groupname}})
+    //   .then((res)=>{
+    //     setJmsgs(res.data)
+    //     console.log("In Getgroupmessages ",data.groupname)
+    //   })
+    setJmsgs(allGMessages[data.groupname])
     if(gname&&username){
       axios
         .post("http://localhost:5290/Chat/AddUsersToGroup", data)
@@ -272,12 +275,13 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
         setJuser(res.data)
         console.log("In Getusersofgroup ",fdata.groupname,juser)
     })
-    axios
-      .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:fdata.groupname}})
-      .then((res)=>{
-        setJmsgs(res.data)
-        console.log("In Getgroupmessages ",fdata.messages)
-    })
+    // axios
+    //   .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:fdata.groupname}})
+    //   .then((res)=>{
+    //     setJmsgs(res.data)
+    //     console.log("In Getgroupmessages ",fdata.messages)
+    // })
+    setJmsgs(allGMessages[fdata.groupname])
     axios
       .post("http://localhost:5290/Chat/AddUsersToGroup", fdata)
       .then((res) => {
@@ -345,15 +349,17 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
                 <hr className="ms-1 w-75 m-0" />
               </React.Fragment>
             )
-        )}
-        {usergroups?.map((group) => (
+        )}        
+        {/* {usergroups?.map((group) => ( */}
+        {console.log("allGMessages in AllChats go ",allGMessages)}
+        {Object.values(allGMessages)?.map((group) => (
           <div key={group.name} className="mt-3 d-flex justify-content-between align-items-center">
             <div>
               <NavLink onClick={()=> groupChat(group) } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">
                 <p className="lead ms-2 text-white fs-4 d-inline"> {group.name} </p>
               </NavLink>
             </div>
-            <div><Button onClick={()=>addurfrnd(group)}>Add ur frnd</Button></div>
+            <div><Button onClick={()=>addurfrnd(group)}><i class="bi bi-person-fill-add"></i></Button></div>
           </div>        
         ))}
       </div>      

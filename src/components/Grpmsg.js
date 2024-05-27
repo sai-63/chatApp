@@ -1,20 +1,26 @@
+import { all } from 'axios';
 import React from 'react';
 import { AiFillFilePdf, AiFillFileImage, AiFillFileExcel, AiFillFileZip, AiFillFileText, AiFillFilePpt, AiFillFileWord, AiFillFileUnknown } from 'react-icons/ai';
 import { GrSpa } from 'react-icons/gr';
 import { RiArrowDropDownLine } from 'react-icons/ri';
 
 
-const Grpmsg=({messagesByDate, host, getCurrentTime, handleGOpen ,handleDeleteModal})=>{
+const Grpmsg=({allGMessages,freshgrp,setFreshGrp,grpperson,messagesByDate, host, getCurrentTime, handleGOpen ,handleDeleteModal})=>{
+  console.log("Got allGmesgs in Grpmsg file as  &group as",allGMessages,grpperson,grpperson.name,freshgrp)
     return (
         <div className="mt-auto">
-        {Object.keys(messagesByDate).map((date) => (
+        {/* {Object.keys(messagesByDate).map((date) => ( */}
+        {/* {Object.keys(allGMessages[grpperson.name]).map((date) => ( */}
+        {/* {Object.entries(allGMessages).map(([groupName, groupDetails]) => (      */}
+        {Object.keys(freshgrp).map((date) => ( 
           <div key={date}>
+            {/* {console.log("We have uk ",groupName,groupDetails)} */}
             <div className="text-center my-3">
 <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
 {date}
 </div>
 </div>
-            {messagesByDate[date].map((obj, index) =>
+            {freshgrp.map((obj, index) =>
               obj.senderId === host ? (
                 <div
                   key={index}

@@ -21,7 +21,7 @@ import { UserContext } from "./UserContext";
 import Grpmsg from "./Grpmsg";
 
 function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessages, allMessages, setAllMessages, 
-  grpperson,finalmsg,setFinalMsg
+  allGMessages,setAllGMessages,grpperson,finalmsg,setFinalMsg
  }) {
   const host = localStorage.getItem("userId");
   const username = localStorage.getItem("username");
@@ -37,6 +37,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
 
   const { user, setUser } = useContext(UserContext);
   let [messagesByDate,setMessagesByDate] = useState({});
+  const [freshgrp,setFreshGrp]=useState({});
   const [editGObject, setEditGObject] = useState({});
   const [editGMessage, setEditGMessage] = useState("");
   const handleDeleteClose = () => setShowDeleteModal(false);
@@ -121,25 +122,6 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }
-
-  useEffect(() => {
-    console.log("Going to change",finalmsg)    
-    if(Array.isArray(finalmsg)){
-      const newMessagesByDate = {};
-      finalmsg.forEach((msg) => {
-      const date = new Date(msg.timestamp).toISOString().split('T')[0]
-      if (!newMessagesByDate[date]) {
-        newMessagesByDate[date] = [];
-      }
-      newMessagesByDate[date].push(msg);
-    });
-    setMessagesByDate(newMessagesByDate);
-  }else{
-    console.log("oyy not array dude")
-  }
-    console.log("changed",messagesByDate)
-  }, [finalmsg]);
-
 
   useEffect(() => {
 
@@ -352,14 +334,39 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
 
     if (user.userType === "group") {
       console.log("Entered convo and group have ",finalmsg);
-      axios
-        .get(`http://localhost:5290/Chat/GetGroupMessages?groupname=${grpperson.name}`)
-        .then((res) => {
-          setFinalMsg(res.data);
-          setIsLoaded(false)
-        });
+      // axios
+      //   .get(`http://localhost:5290/Chat/GetGroupMessages?groupname=${grpperson.name}`)
+      //   .then((res) => {
+      //     setFinalMsg(res.data);
+      //     setIsLoaded(false)
+      //   });
+      setFinalMsg(allGMessages[grpperson.name])
     }
   }, [person, grpperson, user.userType]);
+  useEffect(() => {
+    console.log("Going to change",finalmsg)   
+    const fornow=finalmsg.messages; 
+    console.log("We have fornow as",fornow)
+    // if(Array.isArray(finalmsg)){
+    if(Array.isArray(fornow)){
+      const newMessagesByDate = {};
+      // finalmsg.forEach((msg) => {
+      fornow.forEach((msg) => {
+      const date = new Date(msg.timestamp).toISOString().split('T')[0]
+      if (!newMessagesByDate[date]) {
+        newMessagesByDate[date] = [];
+      }
+      newMessagesByDate[date].push(msg);
+    });
+    console.log("newwwww",newMessagesByDate)
+    setMessagesByDate(newMessagesByDate);
+    //setAllGMessages(newMessagesByDate);
+    setFreshGrp(newMessagesByDate);
+  }else{
+    console.log("oyy not array dude")
+  }
+  console.log("changed atl one",messagesByDate,allGMessages,freshgrp)
+  }, [finalmsg]);
 
 
 
@@ -636,7 +643,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
             ))}
           </div>
         ) : (
-          <Grpmsg messagesByDate={messagesByDate} host={host} getCurrentTime={getCurrentTime} handleGOpen={handleGOpen} 
+          <Grpmsg allGMessages={allGMessages} freshgrp={freshgrp} setFreshGrp={setFreshGrp} grpperson={grpperson} messagesByDate={messagesByDate} host={host} getCurrentTime={getCurrentTime} handleGOpen={handleGOpen} 
           handleDeleteModal={handleDeleteModal} />
         )}
       </div>
