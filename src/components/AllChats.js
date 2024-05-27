@@ -8,7 +8,8 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import {Button,Icons}from 'react-bootstrap';
 import { UserContext } from './UserContext';
 
-function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson, userIds, setUserIds, allMessages, unseenMessages, setUnseenMessages }) {
+function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson, userIds, setUserIds, 
+  allMessages, allGMessages,unseenMessages, setUnseenMessages }) {
   const [host, setHost] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [username, setUsername] = useState("");

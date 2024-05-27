@@ -20,6 +20,8 @@ function Chat() {
   const [unseenMessages,setUnseenMessages] = useState({});
   const [lastMessages,setLastMessages] = useState({});
 
+  const [allGMessages,setAllGMessages]=useState({});
+
   useEffect(() => {
     if (host) {
       axios
@@ -31,7 +33,8 @@ function Chat() {
           const fetchMessagesForUsers = async () => {
             const newAllMessages = {};
             const newUnseenMessages = {};
-  
+            const newAllGMessages = {};
+
             for (const user of friendIds) {
               try {
                 const response = await axios.get("http://localhost:5290/Chat/GetMessagesSenderIdUserId", {
@@ -84,6 +87,22 @@ function Chat() {
               console.log("New User Ids :", newUserIds);
               return newUserIds;
             });
+            try{
+              const neednameres= await axios.get("http://localhost:5290/Chat/Getnamebyid",{params:{userId:host}})
+              const needname=neednameres.data;
+              console.log("Have username as ",needname)
+              try{
+                const resss=await axios.get("http://localhost:5290/Chat/GetUserGroupMessages",{params:{username:needname}});
+                for(const i of Object.values(resss.data)){
+                  newAllGMessages[i.name]=i
+                }
+              }catch(error){
+                console.log("Error getting grpmsgs",error);
+              }
+            }
+            catch(error){console.log("error during username")}
+            console.log("Have grpmsgs as ",newAllGMessages)
+            setAllGMessages(newAllGMessages);
           };
   
           fetchMessagesForUsers();
@@ -112,6 +131,8 @@ function Chat() {
           setUserIds={setUserIds}
           allMessages={allMessages}
           setAllMessages={setAllMessages}
+          allGMessages={allGMessages}
+          setAllGMessages={setAllGMessages}
           unseenMessages={unseenMessages}
           setUnseenMessages={setUnseenMessages}
         />
