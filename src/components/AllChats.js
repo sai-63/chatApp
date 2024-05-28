@@ -9,7 +9,7 @@ import {Button,Icons}from 'react-bootstrap';
 import { UserContext } from './UserContext';
 
 function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson, userIds, setUserIds, 
-  allMessages, allGMessages,unseenMessages, setUnseenMessages }) {
+  allMessages, allGMessages,freshgrp,setFreshGrp,unseenMessages, setUnseenMessages }) {
   const [host, setHost] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [username, setUsername] = useState("");
@@ -19,7 +19,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
   let [usergroups,setUserGroups]=useState([]);
   let [joingroup,setJoinGroup]=useState("");
   let [juser,setJuser]=useState([]);
-  let [jmsgs,setJmsgs]=useState([]);
+  let [jmsgs,setJmsgs]=useState([]);  
 
   console.log("Allchats--> ",allMessages,allGMessages,userIds)
   useEffect(() => {
@@ -37,6 +37,7 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
   //   },3000);
   //   return ()=>clearInterval(interval);
   // },[username]);
+
 
 
   useEffect(() => {
@@ -168,6 +169,16 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
     setUser({ ...user, userType: "group" });
     localStorage.setItem("receiver",gobj.id)
     showGrpPerson(gobj);
+    // const newMessagesByDate = {};
+    // gobj.messages.forEach((msg) => {
+    //   const date = new Date(msg.timestamp).toISOString().split('T')[0]
+    //   if (!newMessagesByDate[date]) {
+    //     newMessagesByDate[date] = [];
+    //   }      
+    //   newMessagesByDate[date].push(msg);
+    // });  
+    // setFreshGrp(newMessagesByDate)
+    console.log("set gmsg at allchats ",gobj.messages)
     axios
       .get("http://localhost:5290/Chat/Getgroupid",{params:{gname:gobj.name}})
       .then((res)=>{

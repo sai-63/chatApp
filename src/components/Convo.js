@@ -21,7 +21,7 @@ import { UserContext } from "./UserContext";
 import Grpmsg from "./Grpmsg";
 
 function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessages, allMessages, setAllMessages, 
-  allGMessages,setAllGMessages,grpperson,finalmsg,setFinalMsg
+  allGMessages,setAllGMessages,un,setUN,grpperson,finalmsg,setFinalMsg,freshgrp,setFreshGrp
  }) {
   const host = localStorage.getItem("userId");
   const username = localStorage.getItem("username");
@@ -36,11 +36,12 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
   const [deleteObject, setDeleteObject] = useState({}); // Adjust this as per your delete object structure
 
   const { user, setUser } = useContext(UserContext);
-  let [messagesByDate,setMessagesByDate] = useState({});
-  const [freshgrp,setFreshGrp]=useState({});
+  let [messagesByDate,setMessagesByDate] = useState({}); 
+  // const [freshgrp,setFreshGrp]=useState({}); 
   const [editGObject, setEditGObject] = useState({});
   const [editGMessage, setEditGMessage] = useState("");
   const handleDeleteClose = () => setShowDeleteModal(false);
+  console.log("Enter convo freshgrp-- & un--",freshgrp,un)
 
   const handleDeleteForEveryone = () => {
     const chatDate = new Date(deleteObject.timestamp).toISOString().split('T')[0];
@@ -122,6 +123,33 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }
+
+  useEffect(() => {
+    console.log("Entered useeffect at 127")
+    if (user.userType === "user") {
+      console.log("Entered convo and user have ",prevMessages);
+      axios
+        .get(`http://localhost:5290/Chat/GetMessagesSenderIdUserId?senderId=${localStorage.getItem("userId")}&receiverId=${person.id}`)
+        .then((response) => {
+          setPrevMessages(response.data);
+          setIsLoaded(false)
+        });
+    }
+
+    if (user.userType === "group") {
+      console.log("Entered convo and group have ",finalmsg);
+      // axios
+      //   .get(`http://localhost:5290/Chat/GetGroupMessages?groupname=${grpperson.name}`)
+      //   .then((res) => {
+      //     setFinalMsg(res.data);
+      //     setIsLoaded(false)
+      //   });
+      const gg=grpperson.name
+      setFinalMsg(allGMessages[grpperson.name])
+      setIsLoaded(false)
+      //setFreshGrp(allGMessages[gg])
+    }
+  }, [person, grpperson, user.userType,allGMessages,setFinalMsg,setFreshGrp]);
 
   useEffect(() => {
 
@@ -311,7 +339,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
 
   useEffect(() => {
     setIsLoaded(true);
-  }, [person,grpperson]);
+  }, [person]);
 
   useEffect(() => {
     scrollDown();
@@ -322,51 +350,36 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
   }, [deleteObject]);
 
   useEffect(() => {
-    if (user.userType === "user") {
-      console.log("Entered convo and user have ",prevMessages);
-      axios
-        .get(`http://localhost:5290/Chat/GetMessagesSenderIdUserId?senderId=${localStorage.getItem("userId")}&receiverId=${person.id}`)
-        .then((response) => {
-          setPrevMessages(response.data);
-          setIsLoaded(false)
-        });
-    }
+    console.log("Entered useeffect at 351")
+    // const abc=async()=> {
+      console.log("Going to change",finalmsg)
+      console.log("We have fornow as",finalmsg.messages)
+      // if(Array.isArray(finalmsg)){
+      if(finalmsg && Array.isArray(finalmsg.messages)){
+        console.log("Array selected only")
+        const newMessagesByDate = {};
 
-    if (user.userType === "group") {
-      console.log("Entered convo and group have ",finalmsg);
-      // axios
-      //   .get(`http://localhost:5290/Chat/GetGroupMessages?groupname=${grpperson.name}`)
-      //   .then((res) => {
-      //     setFinalMsg(res.data);
-      //     setIsLoaded(false)
-      //   });
-      setFinalMsg(allGMessages[grpperson.name])
+        finalmsg.messages.forEach((msg) => {
+        const date = new Date(msg.timestamp).toISOString().split('T')[0]
+        if (!newMessagesByDate[date]) {
+          newMessagesByDate[date] = [];
+        }      
+        newMessagesByDate[date].push(msg);
+      });  
+
+      setFreshGrp(newMessagesByDate);
+      console.log("newwwww",newMessagesByDate)
+      setMessagesByDate(newMessagesByDate);
+      //setAllGMessages(newMessagesByDate);      
+    }else{
+      console.log("oyy not array dude")
     }
-  }, [person, grpperson, user.userType]);
-  useEffect(() => {
-    console.log("Going to change",finalmsg)   
-    const fornow=finalmsg.messages; 
-    console.log("We have fornow as",fornow)
-    // if(Array.isArray(finalmsg)){
-    if(Array.isArray(fornow)){
-      const newMessagesByDate = {};
-      // finalmsg.forEach((msg) => {
-      fornow.forEach((msg) => {
-      const date = new Date(msg.timestamp).toISOString().split('T')[0]
-      if (!newMessagesByDate[date]) {
-        newMessagesByDate[date] = [];
-      }
-      newMessagesByDate[date].push(msg);
-    });
-    console.log("newwwww",newMessagesByDate)
-    setMessagesByDate(newMessagesByDate);
-    //setAllGMessages(newMessagesByDate);
-    setFreshGrp(newMessagesByDate);
-  }else{
-    console.log("oyy not array dude")
-  }
-  console.log("changed atl one",messagesByDate,allGMessages,freshgrp)
-  }, [finalmsg]);
+    console.log("changed atl one",messagesByDate,allGMessages,freshgrp)
+    //}
+    // abc()
+  // }, [finalmsg,setFreshGrp,setMessagesByDate]);
+  },[grpperson,finalmsg,un]);
+
 
 
 
@@ -466,8 +479,9 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
         ref={scrollRef}
         className="d-flex flex-column overflow-auto pb-2 bg-light h-100"
       >
-        {user.userType==="user" ? (
+        {user.userType==="user" ? (          
           <div className="mt-auto">
+            {console.log("user called")}
             {Object.keys(allMessages[person.username]).map((date) => (
               <div key={date}>
                 <div className="text-center my-3">
@@ -643,8 +657,189 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
             ))}
           </div>
         ) : (
-          <Grpmsg allGMessages={allGMessages} freshgrp={freshgrp} setFreshGrp={setFreshGrp} grpperson={grpperson} messagesByDate={messagesByDate} host={host} getCurrentTime={getCurrentTime} handleGOpen={handleGOpen} 
-          handleDeleteModal={handleDeleteModal} />
+          <div className="mt-auto">
+            {console.log("group called fgrp and un as",freshgrp,un)}
+            {console.log("group called msgdt",messagesByDate)}
+            {Object.keys(freshgrp).map((dt) => (
+              <div key={dt}>
+                <div className="text-center my-3">
+                  <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
+                    {getDay(dt)}
+                  </div>
+                </div>
+                {freshgrp[dt].map((obj, index) =>
+                  obj.senderId === host ? (
+                    <div
+                      key={index}
+                      className="ms-auto pe-3 mb-1 d-flex"
+                      style={{ width: "60%", wordBreak: "break-word" }}
+                    >
+                      <div
+                        className="d-inline-block ms-auto fs-6 lead m-0 bg-success pt-1 pb-1 rounded text-white"
+                        style={{ position: "relative" }}
+                      >
+                        {obj.fileType === null ? (
+                          <div
+                            className="d-flex flex-wrap ms-2 me-2 mt-1"
+                            id={index}
+                            style={{ position: "relative" }}
+                          >
+                            <p className="m-0 me-2" style={{ position: "relative", fontSize: "12px" }}>
+                              {un[obj.senderId]}
+                            </p>
+                            <p className="m-0 me-2" style={{ position: "relative" }}>
+                              {obj.message}
+                            </p>
+                            <div className="d-flex align-items-end ms-auto" style={{ position: "relative" }}>
+                              <p className="m-0 mt-auto ms-auto p-0 d-inline" style={{ fontSize: "10px" }}>
+                                {getCurrentTime(obj.timestamp)}
+                              </p>
+                              <FontAwesomeIcon
+                                icon={faCheckDouble}
+                                className="ms-1"
+                                style={{ fontSize: "10px", color: obj.isRead ? "blue" : "white" }}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="d-flex me-1 ms-1 mt-1"
+                            style={{ position: "relative" }}
+                          >
+                            <div
+                              className="d-flex flex-wrap justify-content-between"
+                              style={{ position: "relative" }}
+                            >
+                              {obj.fileType ? (
+                                <div style={{ position: "relative" }}>
+                                  {obj.fileType === "application/pdf" ? (
+                                    <AiFillFilePdf style={{ width: "50px", height: "50px" }} />
+                                  ) : obj.fileType.includes("image") ? (
+                                    <AiFillFileImage style={{ width: "50px", height: "50px" }} />
+                                  ) : obj.fileType.includes("application/vnd") ? (
+                                    <AiFillFileExcel style={{ width: "50px", height: "50px" }} />
+                                  ) : obj.fileType.includes("zip") ? (
+                                    <AiFillFileZip style={{ width: "50px", height: "50px" }} />
+                                  ) : obj.fileType.includes("text/plain") ? (
+                                    <AiFillFileText style={{ width: "50px", height: "50px" }} />
+                                  ) : obj.fileType.includes("application/powerpoint") ? (
+                                    <AiFillFilePpt style={{ width: "50px", height: "50px" }} />
+                                  ) : obj.fileType.includes("application/msword") ? (
+                                    <AiFillFileWord style={{ width: "50px", height: "50px" }} />
+                                  ) : (
+                                    <AiFillFileUnknown style={{ width: "50px", height: "50px" }} />
+                                  )}
+                                  <IoMdDownload
+                                    onClick={() => handleDownload(obj)}
+                                    className="fs-3 text-dark"
+                                    style={{
+                                      position: "absolute",
+                                      bottom: "1rem",
+                                      left: "0",
+                                      borderRadius: "50%",
+                                      cursor: "pointer",
+                                    }}
+                                  />
+                                </div>
+                              ) : null}
+                              <div className="ms-1">{obj.fileName}</div>
+                            </div>
+                            <div
+                              className="mt-auto ms-auto"
+                              style={{ width: "40px", fontSize: "10px" }}
+                            >
+                              {getCurrentTime(obj.timestamp)}
+                            </div>
+                          </div>
+                        )}
+                        <div className="dropstart" style={{ position: "absolute", top: "0", right: "0" }}>
+                          <RiArrowDropDownLine
+                            className="dropdown-toggle fs-4"
+                            style={{ cursor: "pointer" }}
+                            data-bs-toggle="dropdown"
+                          />
+                          <ul className="dropdown-menu p-0 text-center">
+                            <li className="text-center btn d-block" onClick={() => handleDeleteModal(obj, index)}>
+                              <p className="dropdown-item m-0">Delete</p>
+                            </li>
+                            <li className="text-center btn d-block" onClick={() => handleOpen(obj)}>
+                              <p className="dropdown-item m-0">Edit</p>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      key={index}
+                      className="ps-2 mb-1"
+                      style={{ width: "60%", wordBreak: "break-word" }}
+                    >
+                      <div
+                        className="lead m-0 fs-6 d-inline-block text-white bg-secondary p-3 pt-1 pb-1 rounded"
+                        style={{ position: "relative" }}
+                      >
+                        {obj.fileType === null ? (
+                          <div className="d-flex flex-wrap ms-2 me-2 d-inline" style={{ position: "relative" }}>
+                            <p className="m-0 me-2" style={{ position: "relative", fontSize: "12px" }}>
+                              {un[obj.senderId]}
+                            </p>
+                            <p className="m-0 me-2" style={{ position: "relative" }}>
+                              {obj.message}
+                            </p>
+                            <p className="m-0 mt-auto p-0 d-inline" style={{ fontSize: "10px" }}>
+                              {getCurrentTime(obj.timestamp)}
+                            </p>
+                          </div>                          
+                        ) : (
+                          <div className="d-flex ms-1 me-1" style={{ position: "relative" }}>
+                            <div className="d-flex flex-wrap justify-content-between" style={{ position: "relative" }}>
+                              {obj.fileType ? (
+                                <div style={{ position: "relative" }}>
+                                  {obj.fileType === "application/pdf" ? (
+                                    <AiFillFilePdf style={{ width: "50px", height: "50px" }} />
+                                  ) : obj.fileType.includes("image") ? (
+                                    <AiFillFileImage style={{ width: "50px", height: "50px" }} />
+                                  ) : obj.fileType.includes("application/vnd") ? (
+                                    <AiFillFileExcel style={{ width: "50px", height: "50px" }} />
+                                  ) : obj.fileType.includes("zip") ? (
+                                    <AiFillFileZip style={{ width: "50px", height: "50px" }} />
+                                  ) : obj.fileType.includes("text/plain") ? (
+                                    <AiFillFileText style={{ width: "50px", height: "50px" }} />
+                                  ) : obj.fileType.includes("application/powerpoint") ? (
+                                    <AiFillFilePpt style={{ width: "50px", height: "50px" }} />
+                                  ) : obj.fileType.includes("application/msword") ? (
+                                    <AiFillFileWord style={{ width: "50px", height: "50px" }} />
+                                  ) : (
+                                    <AiFillFileUnknown style={{ width: "50px", height: "50px" }} />
+                                  )}
+                                  <IoMdDownload
+                                    onClick={() => handleDownload(obj)}
+                                    className="fs-3 text-dark"
+                                    style={{
+                                      position: "absolute",
+                                      bottom: "1rem",
+                                      left: "0",
+                                      borderRadius: "50%",
+                                      cursor: "pointer",
+                                    }}
+                                  />
+                                </div>
+                              ) : null}
+                              <p className="ms-1">{obj.fileName}</p>
+                            </div>
+                            <div className="mt-auto d-inline" style={{ fontSize: "10px", width: "50px" }}>
+                              {getCurrentTime(obj.timestamp)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            ))}
+          </div>          
         )}
       </div>
 
