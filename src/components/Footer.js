@@ -1,14 +1,15 @@
 import axios from "axios";
 import EmojiPicker from "emoji-picker-react";
-import React, { createElement, useEffect, useState } from "react";
+import React, { createElement, useEffect, useState , useContext} from "react";
 import { Button, OverlayTrigger, Popover } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { AiOutlineSend } from "react-icons/ai";
 import { BsEmojiSunglasses } from "react-icons/bs";
 import { GrAttachment } from "react-icons/gr";
 import SignalRService from './SignalRService';
+import { UserContext } from './UserContext';
 
-function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessages, allMessages, setAllMessages }) {
+function Footer({ person,grpperson, messageObj, setMessageObj, prevMessages, setPrevMessages, allMessages, setAllMessages }) {
   let { handleSubmit } = useForm();
   const host = localStorage.getItem("userId");
   const username = localStorage.getItem("username");
@@ -18,7 +19,8 @@ function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessag
   let [spin, setSpin] = useState(false);
   let data = {};
   const [message, setMessage] = useState('');
-  const [user, setUser] = useState('');
+  //const [user, setUser] = useState('');
+  const { user, setUser } = useContext(UserContext);
 
   function generateUUID() {
     // Generate a random UUID
@@ -29,96 +31,175 @@ function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessag
     });
   }
 
+  function ggenerateUUID() {
+    // Generate a random UUID
+    return 'xxxxxx-xxxx-xxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0;
+        return r.toString(16);
+    });
+  }  
+
   async function submitMessage() {
-    setSpin(true);
-    value = value.trimStart();
-    const messageId = generateUUID();
-    const timestamp = new Date().toISOString();
-    const formData = new FormData();
-    formData.append('SenderId', host);
-    formData.append('ReceiverId', person.id);
-    formData.append('Message', value);
-    formData.append('MessageId', messageId);
-    formData.append('Timestamp', timestamp);
-
-    let data = {
-      messageId: messageId,
-      senderId: host,
-      receiverId: person.id,
-      message: value,
-      isRead: false,
-      senderRemoved: false,
-      timestamp: timestamp,
-      fileContent: null,
-      fileName: null,
-      fileType: null,
-      fileSize: null
-    };
-
-    console.log(host);
-    console.log(person.id);
-    for (let pair of formData.entries()) {
-      console.log(pair[0] + ', ' + pair[1]);
-    }
-
-    if (file !== null) {
-      formData.append("File", file);
-
-      data = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = function (event) {
-          const arrayBuffer = event.target.result;
-          const uint8Array = new Uint8Array(arrayBuffer);
-          const base64String = btoa(String.fromCharCode.apply(null, uint8Array));
-          data.fileContent = base64String;
-          data.fileName = file.name;
-          data.fileType = file.type;
-          data.fileSize = file.size;
-          resolve(data); // Resolve the promise with updated data
-        };
-        reader.onerror = function (error) {
-          reject(error); // Reject the promise if there's an error
-        };
-        reader.readAsArrayBuffer(file);
-      });
-    }
-
-    if (value.length !== 0) {
-      axios.post('http://localhost:5290/Chat/Send Message', formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      })
-        .then((res) => {
-          setValue("");
-          //   setSpin(false);
-          //   alert('Message successfully sent');
-          //   const chatDate = new Date(data.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
-
-          // // setAllMessages(allMessages => {
-          // //   const updatedMessages = { ...allMessages[person.username] };
-
-          // //   if (updatedMessages[chatDate]) {
-          // //     updatedMessages[chatDate] = [...updatedMessages[chatDate], data]; // Append chat to existing date's messages
-          // //   } else {
-          // //     updatedMessages[chatDate] = [data]; // Create a new list for the date if it doesn't exist
-          // //   }
-
-          //   return {
-          //     ...allMessages,
-          //     [person.username]: updatedMessages
-          //   };
-          // });
-        })
-        .catch((error) => {
-          console.log(error);
+    if (user.userType=="user") {
+      setSpin(true);
+      value = value.trimStart();
+      const messageId = generateUUID();
+      const timestamp = new Date().toISOString();
+      const formData = new FormData();
+      formData.append('SenderId', host);
+      formData.append('ReceiverId', person.id);
+      formData.append('Message', value);
+      formData.append('MessageId', messageId);
+      formData.append('Timestamp', timestamp);
+  
+      let data = {
+        messageId: messageId,
+        senderId: host,
+        receiverId: person.id,
+        message: value,
+        isRead: false,
+        senderRemoved: false,
+        timestamp: timestamp,
+        fileContent: null,
+        fileName: null,
+        fileType: null,
+        fileSize: null
+      };
+  
+      console.log(host);
+      console.log(person.id);
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ', ' + pair[1]);
+      }
+  
+      if (file !== null) {
+        formData.append("File", file);
+  
+        data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            const arrayBuffer = event.target.result;
+            const uint8Array = new Uint8Array(arrayBuffer);
+            const base64String = btoa(String.fromCharCode.apply(null, uint8Array));
+            data.fileContent = base64String;
+            data.fileName = file.name;
+            data.fileType = file.type;
+            data.fileSize = file.size;
+            resolve(data); // Resolve the promise with updated data
+          };
+          reader.onerror = function (error) {
+            reject(error); // Reject the promise if there's an error
+          };
+          reader.readAsArrayBuffer(file);
         });
-      console.log(host, " is sending to the Person.id:", person.id);
-      SignalRService.sendMessage(host, data, person.id); // Send message via SignalR
-      SignalRService.incrementUnseenMessages(person.id, username);
-      SignalRService.sortChats(person.id, username, timestamp);
-      SignalRService.sortChats(host, person.username, timestamp);
-      setDisabled(false);
+      }
+  
+      if (value.length !== 0) {
+        axios.post('http://localhost:5290/Chat/Send Message', formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        })
+          .then((res) => {
+            setValue("");
+            //   setSpin(false);
+            //   alert('Message successfully sent');
+            //   const chatDate = new Date(data.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
+  
+            // // setAllMessages(allMessages => {
+            // //   const updatedMessages = { ...allMessages[person.username] };
+  
+            // //   if (updatedMessages[chatDate]) {
+            // //     updatedMessages[chatDate] = [...updatedMessages[chatDate], data]; // Append chat to existing date's messages
+            // //   } else {
+            // //     updatedMessages[chatDate] = [data]; // Create a new list for the date if it doesn't exist
+            // //   }
+  
+            //   return {
+            //     ...allMessages,
+            //     [person.username]: updatedMessages
+            //   };
+            // });
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+        console.log(host, " is sending to the Person.id:", person.id);
+        SignalRService.sendMessage(host, data, person.id); // Send message via SignalR
+        SignalRService.incrementUnseenMessages(person.id, username);
+        SignalRService.sortChats(person.id, username, timestamp);
+        SignalRService.sortChats(host, person.username, timestamp);
+        setDisabled(false);
+      }
+    }else{
+      setSpin(true);
+      value = value.trimStart();
+      const messageId = generateUUID();
+      const timestamp = new Date().toISOString();
+      const formData = new FormData();
+      formData.append('Id', messageId);
+      formData.append('SenderId', host);
+      formData.append('Message', value);      
+      formData.append('Timestamp', timestamp);
+  
+      let data = {
+        id: messageId,
+        SenderId: host,
+        Message: value,
+        FileName: null,
+        FileType: null,
+        FileSize: null,
+        FileContent: null,        
+        Timestamp: timestamp,
+      };
+  
+      console.log("host bayya",host);
+      console.log("Group Id: Footer- ",grpperson.id);
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ', ' + pair[1]);
+      }
+  
+      if (file !== null) {
+        formData.append("File", file);
+  
+        data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            const arrayBuffer = event.target.result;
+            const uint8Array = new Uint8Array(arrayBuffer);
+            const base64String = btoa(String.fromCharCode.apply(null, uint8Array));
+            data.fileContent = base64String;
+            data.fileName = file.name;
+            data.fileType = file.type;
+            data.fileSize = file.size;
+            resolve(data); // Resolve the promise with updated data
+          };
+          reader.onerror = function (error) {
+            reject(error); // Reject the promise if there's an error
+          };
+          reader.readAsArrayBuffer(file);
+        });
+      }
+  
+      if (value.length !== 0) {
+        axios.post(`http://localhost:5290/Chat/SendGrpMessage?groupname=${encodeURIComponent(grpperson.name)}`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        })
+          .then((res) => {
+            setValue("");
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+        console.log(host, " is sending to the Group.id:", grpperson.id,localStorage.getItem("groupid"));
+        SignalRService.sendGrpMessage(host, data, localStorage.getItem("groupid")); // Send message via SignalR
+        // SignalRService.incrementUnseenMessages(person.id, username);
+        //SignalRService.sortChats(person.id, username, timestamp);
+        //SignalRService.sortChats(host, person.username, timestamp);
+        setDisabled(false);
+      }
     }
   }
 

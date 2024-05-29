@@ -21,7 +21,7 @@ import { UserContext } from "./UserContext";
 import Grpmsg from "./Grpmsg";
 
 function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessages, allMessages, setAllMessages, 
-  allGMessages,setAllGMessages,un,setUN,grpperson,finalmsg,setFinalMsg,freshgrp,setFreshGrp
+  allGMessages,setAllGMessages,un,setUN,grpperson,finalmsg,setFinalMsg
  }) {
   const host = localStorage.getItem("userId");
   const username = localStorage.getItem("username");
@@ -36,12 +36,10 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
   const [deleteObject, setDeleteObject] = useState({}); // Adjust this as per your delete object structure
 
   const { user, setUser } = useContext(UserContext);
-  let [messagesByDate,setMessagesByDate] = useState({}); 
-  // const [freshgrp,setFreshGrp]=useState({}); 
   const [editGObject, setEditGObject] = useState({});
   const [editGMessage, setEditGMessage] = useState("");
   const handleDeleteClose = () => setShowDeleteModal(false);
-  console.log("Enter convo freshgrp-- & un--",freshgrp,un)
+  console.log("Enter convo un--",un)
 
   const handleDeleteForEveryone = () => {
     const chatDate = new Date(deleteObject.timestamp).toISOString().split('T')[0];
@@ -144,12 +142,10 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       //     setFinalMsg(res.data);
       //     setIsLoaded(false)
       //   });
-      const gg=grpperson.name
       setFinalMsg(allGMessages[grpperson.name])
       setIsLoaded(false)
-      //setFreshGrp(allGMessages[gg])
     }
-  }, [person, grpperson, user.userType,allGMessages,setFinalMsg,setFreshGrp]);
+  }, [person, grpperson, user.userType,allGMessages,setFinalMsg]);
 
   useEffect(() => {
 
@@ -247,26 +243,43 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       readMessage(messageIds);
     });
   }, [person]);
+
   useEffect(() => {
-    const editGMessage = (date, messageId, newMessage) => {
-      setMessagesByDate(messagesByDate => {
-        const updatedgrpMessages = { ...messagesByDate };
-        if (updatedgrpMessages[date]) {
-          updatedgrpMessages[date] = updatedgrpMessages[date].map(message =>
-            message.id === messageId ? { ...message, message: newMessage } : message
-          );
+    // const editGMessage = (date, messageId, newMessage) => {
+    //   setMessagesByDate(messagesByDate => {
+    //     const updatedgrpMessages = { ...messagesByDate };
+    //     if (updatedgrpMessages[date]) {
+    //       updatedgrpMessages[date] = updatedgrpMessages[date].map(message =>
+    //         message.id === messageId ? { ...message, message: newMessage } : message
+    //       );
+    //     }
+    //     return {
+    //       ...messagesByDate,
+    //       [grpperson.id]: updatedgrpMessages
+    //     };
+    //   });
+    // };
+    SignalRService.setReceiveGroupMessageCallback((grpmsg)=>{
+      console.log("setting rec grp mclback - ",grpmsg)
+      const chatDate = new Date(grpmsg.timestamp).toISOString().split('T')[0];
+      setAllGMessages(allGMessages => {
+        const updatedMessages = { ...allGMessages[grpperson.name] };
+        if (updatedMessages[chatDate]) {
+          updatedMessages[chatDate] = [...updatedMessages[chatDate], grpmsg]; // Append chat to existing date's messages
+        } else {
+          updatedMessages[chatDate] = [grpmsg]; // Create a new list for the date if it doesn't exist
         }
         return {
-          ...messagesByDate,
-          [grpperson.id]: updatedgrpMessages
+          ...allGMessages,
+          [grpperson.name]: updatedMessages
         };
-      });
-    };
+        })
+    })
 
     SignalRService.setEditGMessageCallback((messageId, newMessage, chatDate) => {
       editGMessage(chatDate, messageId, newMessage);
     });
-  },[grpperson]);
+  },[grpperson])
 
   useEffect(() => {
     SignalRService.changeReceiver(person.id);
@@ -338,7 +351,9 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
   }, [prevMessages])
 
   useEffect(() => {
-    setIsLoaded(true);
+    if(user.userType==="user"){
+      setIsLoaded(true);
+    }
   }, [person]);
 
   useEffect(() => {
@@ -348,40 +363,6 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
   useEffect(() => {
     setDeleteObject(deleteObject)
   }, [deleteObject]);
-
-  useEffect(() => {
-    console.log("Entered useeffect at 351")
-    // const abc=async()=> {
-      console.log("Going to change",finalmsg)
-      console.log("We have fornow as",finalmsg.messages)
-      // if(Array.isArray(finalmsg)){
-      if(finalmsg && Array.isArray(finalmsg.messages)){
-        console.log("Array selected only")
-        const newMessagesByDate = {};
-
-        finalmsg.messages.forEach((msg) => {
-        const date = new Date(msg.timestamp).toISOString().split('T')[0]
-        if (!newMessagesByDate[date]) {
-          newMessagesByDate[date] = [];
-        }      
-        newMessagesByDate[date].push(msg);
-      });  
-
-      setFreshGrp(newMessagesByDate);
-      console.log("newwwww",newMessagesByDate)
-      setMessagesByDate(newMessagesByDate);
-      //setAllGMessages(newMessagesByDate);      
-    }else{
-      console.log("oyy not array dude")
-    }
-    console.log("changed atl one",messagesByDate,allGMessages,freshgrp)
-    //}
-    // abc()
-  // }, [finalmsg,setFreshGrp,setMessagesByDate]);
-  },[grpperson,finalmsg,un]);
-
-
-
 
   if (isLoaded) {
     return (
@@ -658,16 +639,14 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
           </div>
         ) : (
           <div className="mt-auto">
-            {console.log("group called fgrp and un as",freshgrp,un)}
-            {console.log("group called msgdt",messagesByDate)}
-            {Object.keys(freshgrp).map((dt) => (
+            {Object.keys(allGMessages[grpperson.name]).map((dt) => (
               <div key={dt}>
                 <div className="text-center my-3">
                   <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
                     {getDay(dt)}
                   </div>
                 </div>
-                {freshgrp[dt].map((obj, index) =>
+                {allGMessages[grpperson.name][dt].map((obj, index) =>
                   obj.senderId === host ? (
                     <div
                       key={index}

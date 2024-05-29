@@ -22,8 +22,9 @@
     const [lastMessages,setLastMessages] = useState({});
 
     const [allGMessages,setAllGMessages]=useState({});
-    const [freshgrp,setFreshGrp]=useState({});
+    const [allgrps,setAllGrps]=useState([])
     const [un,setUN]=useState(null)
+    const [fulldet,setFullDet]=useState({})
 
     useEffect(() => {
       if (host) {        
@@ -205,41 +206,57 @@
             const fetchGroupMessages = async () => {
               const newAllGMessages = {};
               let ouno = null;
-  
+              const newFulldet={}
               try {
-                const neednameres = await axios.get(
-                  "http://localhost:5290/Chat/Getnamebyid",
-                  { params: { userId: host } }
+                const unn = await axios.get(
+                  "http://localhost:5290/Chat/Getnameforid"
                 );
-                const needname = neednameres.data;
-                console.log("Have username as ", needname);
-                try {
-                  const resss = await axios.get(
-                    "http://localhost:5290/Chat/GetUserGroupMessages",
-                    { params: { username: needname } }
-                  );
-                  for (const i of Object.values(resss.data)) {
-                    newAllGMessages[i.name] = i;
-                  }
-                } catch (error) {
-                  console.log("Error getting group messages", error);
-                }
-                try {
-                  const unn = await axios.get(
-                    "http://localhost:5290/Chat/Getnameforid"
-                  );
-                  ouno = unn.data;
-                  console.log("We get un as in chat file ", unn.data);
-                } catch (error) {
-                  console.log("Error getting uids and usernames");
-                }
+                ouno = unn.data;
+                console.log("We get un as in chat file ", unn.data);
+              } catch (error) {
+                console.log("Error getting uids and usernames");
+              }
+              const hostname = await axios.get("http://localhost:5290/GetUsernameById", {params: { userId: host }})
+              console.log("Group hostname - ",hostname.data)
+              const hostgrps=await axios.get(`http://localhost:5290/Chat/Getallgrps?username=${hostname.data}`)
+              console.log("Host is in groups - ",hostgrps.data)
+              for (const i of hostgrps.data) {
+                  const response = await axios.get(
+                    `http://localhost:5290/Chat/GetUserGroupMessages?groupname=${i}`
+                  )
+                  const res=await axios.get(`http://localhost:5290/Chat/FullDetOfGroup?groupname=${i}`)
+                  newAllGMessages[i]=response.data
+                  newFulldet[i]=res.data
+              }
+              try {
+                // const neednameres = await axios.get(
+                //   "http://localhost:5290/Chat/Getnamebyid",
+                //   { params: { userId: host } }
+                // );
+                // const needname = neednameres.data;
+                // console.log("Have username as ", needname);
+                // try {
+                //   const resss = await axios.get(
+                //     "http://localhost:5290/Chat/GetUserGroupMessages",
+                //     { params: { username: needname } }
+                //   );
+                //   for (const i of Object.values(resss.data)) {
+                //     newAllGMessages[i.name] = i;
+                //   }
+                // } catch (error) {
+                //   console.log("Error getting group messages", error);
+                // }                
               } catch (error) {
                 console.log("error during username");
               }
               console.log("Chat- allMessages ", allMessages);
               console.log("Chat- group messages as ", newAllGMessages);
               console.log("Chat - un", un, ouno);
-              setAllGMessages(newAllGMessages);
+              //setAllGMessages(newAllGMessages);
+              console.log("setting groups - ",hostgrps.data)
+              setAllGrps(hostgrps.data)
+              setAllGMessages(newAllGMessages)
+              setFullDet(newFulldet)
               setUN(ouno);
             };
   
@@ -275,8 +292,7 @@
             allMessages={allMessages}
             setAllMessages={setAllMessages}
             allGMessages={allGMessages}
-            // freshgrp={freshgrp}
-            // setFreshGrp={setFreshGrp}          
+            fulldet={fulldet}        
             setAllGMessages={setAllGMessages}          
             unseenMessages={unseenMessages}
             setUnseenMessages={setUnseenMessages}
@@ -301,8 +317,6 @@
               setAllGMessages={setAllGMessages}
               un={un}
               setUN={setUN}
-              freshgrp={freshgrp}
-              setFreshGrp={setFreshGrp}
               grpperson={grpperson}
               showGrpPerson={showGrpPerson}
             />

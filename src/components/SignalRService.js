@@ -5,6 +5,8 @@ class SignalRService {
   constructor() {
     this.connection = null;
     this.receiveMessageCallback = null;
+    this.receiveGroupMessageCallback=null;
+    this.gid=null;
     this.removeMessageCallback = null;
     this.editMessageCallback = null;
     this.editGMessageCallback=null;
@@ -38,6 +40,8 @@ class SignalRService {
 
     this.userId = localStorage.getItem("userId");
     this.username = localStorage.getItem("username");
+    this.gid=localStorage.getItem("groupid")
+    console.log("Out User connected:",this.userId,"Group id",this.gid);
 
     if (!this.userId) return;
 
@@ -78,6 +82,9 @@ class SignalRService {
         this.isConnecting = false;
         this.userOnline(); // Mark user as online when the connection is established
         this.setupListeners();
+        if (this.gid) {
+          this.joinGroup(this.gid);
+        }
       })
       .catch(err => {
         console.error("Error starting SignalR connection:", err.toString());
@@ -98,6 +105,16 @@ class SignalRService {
         }
       }
     });
+
+    this.connection.on("ReceiveGrpMessage", (user,groupmsg) => {
+      console.log(`${groupmsg.senderId}: ${groupmsg.message}`,this.gid);
+      if (this.receiveGroupMessageCallback) {
+        console.log("Received grp msg from backend")
+        this.receiveGroupMessageCallback(groupmsg);
+      }
+    });
+
+
 
     this.connection.on("MessageRemoved", (messageId, chatDate) => {
       if (this.removeMessageCallback) {
@@ -216,6 +233,24 @@ class SignalRService {
     }
   }
 
+  joinGroup(groupName) {
+    if (this.connection) {
+      this.connection.invoke("JoinGroup", groupName)
+          .catch(err => console.error("Error joining group:", err.toString()));
+    }
+  }
+
+  sendGrpMessage(user, data, receiverId = null) {
+    this.ensureConnection();
+    console.log("Sr from footer - ",data)
+    if (this.connection) {
+        this.connection.invoke("SendToGroup", this.userId, receiverId, data)
+          .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+
   removeMessage(receiverId, messageId, chatDate) {
     this.ensureConnection();
     if (this.connection) {
@@ -278,6 +313,9 @@ class SignalRService {
 
   setReceiveMessageCallback(callback) {
     this.receiveMessageCallback = callback;
+  }
+  setReceiveGroupMessageCallback(callback) {
+    this.receiveGroupMessageCallback = callback;
   }
 
   setRemoveMessageCallback(callback) {

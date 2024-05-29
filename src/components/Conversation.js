@@ -53,7 +53,7 @@
           finalmsg={finalmsg}
           setFinalMsg={setFinalMsg}
         />
-        <Footer person={person} prevMessages={prevMessages} setPrevMessages={setPrevMessages} allMessages={allMessages}
+        <Footer person={person} grpperson={grpperson} prevMessages={prevMessages} setPrevMessages={setPrevMessages} allMessages={allMessages}
           setAllMessages={setAllMessages} allGMessages={allGMessages}
           setAllGMessages={setAllGMessages} finalmsg={finalmsg} setFinalMsg={setFinalMsg}/>
       </>

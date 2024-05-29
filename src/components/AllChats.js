@@ -9,7 +9,7 @@ import {Button,Icons}from 'react-bootstrap';
 import { UserContext } from './UserContext';
 
 function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson, userIds, setUserIds, 
-  allMessages, allGMessages,freshgrp,setFreshGrp,unseenMessages, setUnseenMessages }) {
+  allMessages, allGMessages,fulldet,unseenMessages, setUnseenMessages }) {
   const [host, setHost] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [username, setUsername] = useState("");
@@ -169,15 +169,6 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
     setUser({ ...user, userType: "group" });
     localStorage.setItem("receiver",gobj.id)
     showGrpPerson(gobj);
-    // const newMessagesByDate = {};
-    // gobj.messages.forEach((msg) => {
-    //   const date = new Date(msg.timestamp).toISOString().split('T')[0]
-    //   if (!newMessagesByDate[date]) {
-    //     newMessagesByDate[date] = [];
-    //   }      
-    //   newMessagesByDate[date].push(msg);
-    // });  
-    // setFreshGrp(newMessagesByDate)
     console.log("set gmsg at allchats ",gobj.messages)
     axios
       .get("http://localhost:5290/Chat/Getgroupid",{params:{gname:gobj.name}})
@@ -363,16 +354,27 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
         )}        
         {/* {usergroups?.map((group) => ( */}
         {console.log("allGMessages in AllChats go ",allGMessages)}
-        {Object.values(allGMessages)?.map((group) => (
-          <div key={group.name} className="mt-3 d-flex justify-content-between align-items-center">
+        {Object.entries(allGMessages)?.map(([groupName, group]) => (          
+          <div key={groupName} className="mt-3 d-flex justify-content-between align-items-center">
             <div>
-              <NavLink onClick={()=> groupChat(group) } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">
-                <p className="lead ms-2 text-white fs-4 d-inline"> {group.name} </p>
+              {console.log(groupName,group)}
+              <NavLink onClick={()=> groupChat(fulldet[groupName]) } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">
+                <p className="lead ms-2 text-white fs-4 d-inline"> {groupName} </p>
               </NavLink>
             </div>
-            <div><Button onClick={()=>addurfrnd(group)}><i class="bi bi-person-fill-add"></i></Button></div>
+            <div><Button onClick={()=>addurfrnd(fulldet[groupName])}><i class="bi bi-person-fill-add"></i></Button></div>
           </div>        
         ))}
+        {/* // {Object.values(allGMessages)?.map((group) => (
+        //   <div key={group.name} className="mt-3 d-flex justify-content-between align-items-center">
+        //     <div>
+        //       <NavLink onClick={()=> groupChat(group) } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">
+        //         <p className="lead ms-2 text-white fs-4 d-inline"> {group.name} </p>
+        //       </NavLink>
+        //     </div>
+        //     <div><Button onClick={()=>addurfrnd(group)}><i class="bi bi-person-fill-add"></i></Button></div>
+        //   </div>        
+        // ))} */}
       </div>      
       {show && (
         <div
