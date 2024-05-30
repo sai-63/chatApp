@@ -42,56 +42,107 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
   console.log("Enter convo un--",un)
 
   const handleDeleteForEveryone = () => {
-    const chatDate = new Date(deleteObject.timestamp).toISOString().split('T')[0];
-    const msgId = deleteObject.messageId;
-    axios
-      .post(
-        "http://localhost:5290/Chat/DeleteMessage?messageId=" + msgId
-      )
-      .then((res) => {
-        console.log(res.data.message);
-      })
-      .catch((err) => {
-        console.log(err.message);
-      });
-    SignalRService.removeMessage(person.id, msgId, chatDate);
-    SignalRService.sortChats(person.id,null,deleteObject.timestamp);
-    SignalRService.sortChats(host,null,deleteObject.timestamp);
+    if (user.userType==="user") {
+      const chatDate = new Date(deleteObject.timestamp).toISOString().split('T')[0];
+      const msgId = deleteObject.messageId;
+      axios
+        .post(
+          "http://localhost:5290/Chat/DeleteMessage?messageId=" + msgId
+        )
+        .then((res) => {
+          console.log(res.data.message);
+        })
+        .catch((err) => {
+          console.log(err.message);
+        });
+      SignalRService.removeMessage(person.id, msgId, chatDate);
+      SignalRService.sortChats(person.id,null,deleteObject.timestamp);
+      SignalRService.sortChats(host,null,deleteObject.timestamp);
+    }else{
+      const chatDate = new Date(deleteObject.timestamp).toISOString().split('T')[0];
+      const msgId = deleteObject.id;
+      console.log("To delete in group ,id",deleteObject,msgId,grpperson.name)
+      axios
+        .post(
+          `http://localhost:5290/Chat/DeleteGrpMessage?groupname=${grpperson.name}&messageId=${msgId}`
+        )
+        .then((res) => {
+          console.log(res.data);
+        })
+        .catch((err) => {
+          console.log(err.message);
+        });
+      SignalRService.removeGrpMessage(localStorage.getItem("groupid"), msgId, chatDate);
+    }
     handleDeleteClose();
   };
 
   const handleDeleteForMe = () => {
-    const chatDate = new Date(deleteObject.timestamp).toISOString().split('T')[0];
-    const msgId = deleteObject.messageId;
-
-    setAllMessages(allMessages => {
-      const updatedMessages = { ...allMessages[person.username] };
-
-      if (updatedMessages[chatDate]) {
-        updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.messageId !== msgId);
-
-        if (updatedMessages[chatDate].length === 0) {
-          delete updatedMessages[chatDate];
+    if (user.userType==="user") {
+      const chatDate = new Date(deleteObject.timestamp).toISOString().split('T')[0];
+      const msgId = deleteObject.messageId;
+  
+      setAllMessages(allMessages => {
+        const updatedMessages = { ...allMessages[person.username] };
+  
+        if (updatedMessages[chatDate]) {
+          updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.messageId !== msgId);
+  
+          if (updatedMessages[chatDate].length === 0) {
+            delete updatedMessages[chatDate];
+          }
         }
-      }
-
-      return {
-        ...allMessages,
-        [person.username]: updatedMessages
-      };
-    });
-
-    axios
-      .post(
-        "http://localhost:5290/Chat/DeleteMessageForMe?messageId=" + msgId
-      )
-      .then((res) => {
-        console.log(res.data.message);
-      })
-      .catch((err) => {
-        console.log(err.message);
+  
+        return {
+          ...allMessages,
+          [person.username]: updatedMessages
+        };
       });
-      SignalRService.sortChats(host,null,deleteObject.timestamp);
+  
+      axios
+        .post(
+          "http://localhost:5290/Chat/DeleteMessageForMe?messageId=" + msgId
+        )
+        .then((res) => {
+          console.log(res.data.message);
+        })
+        .catch((err) => {
+          console.log(err.message);
+        });
+        SignalRService.sortChats(host,null,deleteObject.timestamp);
+    }else{
+      const chatDate = new Date(deleteObject.timestamp).toISOString().split('T')[0];
+      const msgId = deleteObject.id;
+  
+      setAllGMessages(allGMessages => {
+        const updatedMessages = { ...allGMessages[grpperson.name] };
+  
+        if (updatedMessages[chatDate]) {
+          updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.id !== msgId);
+  
+          if (updatedMessages[chatDate].length === 0) {
+            delete updatedMessages[chatDate];
+          }
+        }
+  
+        return {
+          ...allGMessages,
+          [grpperson.name]: updatedMessages
+        };
+      });
+  
+      axios
+        .post(
+          `http://localhost:5290/Chat/DeleteGrpForMe?groupname=${grpperson.name}&messageId=${msgId}`
+        )
+        .then((res) => {
+          console.log(res.data);
+        })
+        .catch((err) => {
+          console.log(err.message);
+        });
+        //SignalRService.sortChats(host,null,deleteObject.timestamp);
+    }
     handleDeleteClose();
   };
 
@@ -278,6 +329,25 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
 
     SignalRService.setEditGMessageCallback((messageId, newMessage, chatDate) => {
       editGMessage(chatDate, messageId, newMessage);
+    });
+    const removeGrpMessage = (chatDate, messageId) => {
+      setAllGMessages(allGMessages => {
+        const updatedMessages = { ...allGMessages[grpperson.name] };
+        console.log("going to set alllg after del",updatedMessages)
+        if (updatedMessages[chatDate]) {
+          updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.id !== messageId);
+          if (updatedMessages[chatDate].length === 0) {
+            delete updatedMessages[chatDate];
+          }
+        }
+        return {
+          ...allGMessages,
+          [grpperson.name]: updatedMessages
+        };
+      });
+    };
+    SignalRService.setGrpRemoveMessageCallback((id, chatDate) => {
+      removeGrpMessage(chatDate, id);
     });
   },[grpperson])
 
@@ -646,8 +716,8 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                     {getDay(dt)}
                   </div>
                 </div>
-                {allGMessages[grpperson.name][dt].map((obj, index) =>
-                  obj.senderId === host ? (
+                {allGMessages[grpperson.name][dt].map((obj, index) =>    
+                obj.senderId === host? (
                     <div
                       key={index}
                       className="ms-auto pe-3 mb-1 d-flex"
@@ -658,11 +728,12 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                         style={{ position: "relative" }}
                       >
                         {obj.fileType === null ? (
+                          (obj.deletedBy?(
                           <div
                             className="d-flex flex-wrap ms-2 me-2 mt-1"
                             id={index}
                             style={{ position: "relative" }}
-                          >
+                          >                                                        
                             <p className="m-0 me-2" style={{ position: "relative", fontSize: "12px" }}>
                               {un[obj.senderId]}
                             </p>
@@ -672,15 +743,15 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                             <div className="d-flex align-items-end ms-auto" style={{ position: "relative" }}>
                               <p className="m-0 mt-auto ms-auto p-0 d-inline" style={{ fontSize: "10px" }}>
                                 {getCurrentTime(obj.timestamp)}
-                              </p>
+                              </p>                     
                               <FontAwesomeIcon
                                 icon={faCheckDouble}
                                 className="ms-1"
                                 style={{ fontSize: "10px", color: obj.isRead ? "blue" : "white" }}
                               />
-                            </div>
-                          </div>
-                        ) : (
+                            </div>                            
+                          </div>):(<div><h1>hi</h1></div>)
+                        ) ): (
                           <div
                             className="d-flex me-1 ms-1 mt-1"
                             style={{ position: "relative" }}

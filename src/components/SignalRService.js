@@ -8,6 +8,7 @@ class SignalRService {
     this.receiveGroupMessageCallback=null;
     this.gid=null;
     this.removeMessageCallback = null;
+    this.removeGMessageCallback = null;
     this.editMessageCallback = null;
     this.editGMessageCallback=null;
     this.readMessageCallback = null;
@@ -119,6 +120,12 @@ class SignalRService {
     this.connection.on("MessageRemoved", (messageId, chatDate) => {
       if (this.removeMessageCallback) {
         this.removeMessageCallback(messageId, chatDate);
+      }
+    });
+    this.connection.on("GrpMessageRemoved", (messageId, chatDate) => {
+      console.log("confirm from backend", messageId, chatDate )
+      if (this.removeGMessageCallback) {
+        this.removeGMessageCallback(messageId, chatDate);
       }
     });
 
@@ -262,6 +269,16 @@ class SignalRService {
       console.error("SignalR connection is not established.");
     }
   }
+  removeGrpMessage(groupid, messageId, chatDate) {
+    this.ensureConnection();
+    if (this.connection) {
+      console.log("Gonna call backend with - ",groupid, messageId, chatDate)
+      this.connection.invoke("RemoveGrpMessage", groupid, messageId, chatDate)
+        .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
 
   editMessage(receiverId, messageId, newMessage, chatDate) {
     this.ensureConnection();
@@ -322,6 +339,9 @@ class SignalRService {
 
   setRemoveMessageCallback(callback) {
     this.removeMessageCallback = callback;
+  }
+  setGrpRemoveMessageCallback(callback) {
+    this.removeGMessageCallback = callback;
   }
 
   setEditMessageCallback(callback) {
