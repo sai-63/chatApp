@@ -145,7 +145,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       setFinalMsg(allGMessages[grpperson.name])
       setIsLoaded(false)
     }
-  }, [person, grpperson, user.userType,allGMessages,setFinalMsg]);
+  }, [person, grpperson, user.userType]);
 
   useEffect(() => {
 

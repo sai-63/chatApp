@@ -234,7 +234,9 @@ class SignalRService {
   }
 
   joinGroup(groupName) {
+    this.ensureConnection();
     if (this.connection) {
+      console.log("Joined grouppppppppp - ",groupName)
       this.connection.invoke("JoinGroup", groupName)
           .catch(err => console.error("Error joining group:", err.toString()));
     }
@@ -242,11 +244,11 @@ class SignalRService {
 
   sendGrpMessage(user, data, receiverId = null) {
     this.ensureConnection();
-    console.log("Sr from footer - ",data)
+    console.log("Sr from footer - ",data)    
     if (this.connection) {
-        this.connection.invoke("SendToGroup", this.userId, receiverId, data)
-          .catch(err => console.error(err.toString()));
-    } else {
+      this.connection.invoke("SendToGroup", this.userId, receiverId, data)
+        .catch(err => console.error(err.toString()));        
+    }else{
       console.error("SignalR connection is not established.");
     }
   }
