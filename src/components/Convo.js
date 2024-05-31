@@ -334,7 +334,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       setAllGMessages(allGMessages => {
         const updatedMessages = { ...allGMessages[grpperson.name] };
         console.log("going to set alllg after del",updatedMessages)
-        if (updatedMessages[chatDate]) {
+        if (updatedMessages[chatDate]) {          
           updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.id !== messageId);
           if (updatedMessages[chatDate].length === 0) {
             delete updatedMessages[chatDate];
@@ -728,7 +728,6 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                         style={{ position: "relative" }}
                       >
                         {obj.fileType === null ? (
-                          (obj.deletedBy?(
                           <div
                             className="d-flex flex-wrap ms-2 me-2 mt-1"
                             id={index}
@@ -750,8 +749,8 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                                 style={{ fontSize: "10px", color: obj.isRead ? "blue" : "white" }}
                               />
                             </div>                            
-                          </div>):(<div><h1>hi</h1></div>)
-                        ) ): (
+                          </div>
+                        ): (
                           <div
                             className="d-flex me-1 ms-1 mt-1"
                             style={{ position: "relative" }}
