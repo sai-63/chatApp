@@ -9,7 +9,7 @@ import {Button,Icons}from 'react-bootstrap';
 import { UserContext } from './UserContext';
 
 function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson, userIds, setUserIds, 
-  allMessages, allGMessages,fulldet,unseenMessages, setUnseenMessages }) {
+  allMessages, allGMessages,fulldet,unseenMessages, setUnseenMessages}) {
   const [host, setHost] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [username, setUsername] = useState("");
@@ -168,15 +168,15 @@ function AllChats({ show, setShow, message, setMessage, showPerson,showGrpPerson
     console.log("We got on clicking grp is ",gobj)
     setUser({ ...user, userType: "group" });
     localStorage.setItem("receiver",gobj.id)
-    showGrpPerson(gobj);
+    showGrpPerson(gobj)  
     console.log("set gmsg at allchats ",gobj.messages)
     axios
       .get("http://localhost:5290/Chat/Getgroupid",{params:{gname:gobj.name}})
       .then((res)=>{
         console.log("Hooray",res.data);
-        localStorage.setItem("groupid",res.data);
-      } 
-    )
+        //localStorage.setItem("groupid",res.data);
+      }
+    )    
   }
 
   const handleShow = () => {

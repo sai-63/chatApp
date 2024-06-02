@@ -33,9 +33,9 @@ function Footer({ person,grpperson, messageObj, setMessageObj, prevMessages, set
 
   function ggenerateUUID() {
     // Generate a random UUID
-    return 'xxxxxx-xxxx-xxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0;
-        return r.toString(16);
+    return 'xxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 24 | 0;
+        return r.toString(24);
     });
   }  
 
@@ -134,7 +134,7 @@ function Footer({ person,grpperson, messageObj, setMessageObj, prevMessages, set
     }else{
       setSpin(true);
       value = value.trimStart();
-      const messageId = generateUUID();
+      const messageId = ggenerateUUID();
       const timestamp = new Date().toISOString();
       const formData = new FormData();
       formData.append('Id', messageId);
@@ -143,14 +143,15 @@ function Footer({ person,grpperson, messageObj, setMessageObj, prevMessages, set
       formData.append('Timestamp', timestamp);
   
       let data = {
-        id: messageId,
+        Id: messageId,
         SenderId: host,
         Message: value,
         FileName: null,
         FileType: null,
-        FileSize: null,
-        FileContent: null,        
+        FileContent: null,
+        FileSize: null,             
         Timestamp: timestamp,
+        DeletedBy:false,
       };
   
       console.log("host bayya",host);
@@ -193,8 +194,11 @@ function Footer({ person,grpperson, messageObj, setMessageObj, prevMessages, set
           .catch((error) => {
             console.log(error);
           });
-        console.log(host, " is sending to the Group.id:", grpperson.id,localStorage.getItem("groupid"));
-        SignalRService.sendGrpMessage(host, data, localStorage.getItem("groupid")); // Send message via SignalR
+        console.log(host, " is sending to the Group.id:", grpperson.id,localStorage.getItem("groupid"),grpperson.name);
+        // SignalRService.sendGrpMessage(host, data, localStorage.getItem("currentGroupName"));
+        //SignalRService.sendGrpMessage(host, data, localStorage.getItem("groupid"));
+        SignalRService.sendGrpMessage(host, data,grpperson.name);
+        
         // SignalRService.incrementUnseenMessages(person.id, username);
         //SignalRService.sortChats(person.id, username, timestamp);
         //SignalRService.sortChats(host, person.username, timestamp);

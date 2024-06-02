@@ -81,11 +81,12 @@ class SignalRService {
         console.log("SignalR connection established.");
         this.isConnected = true;
         this.isConnecting = false;
-        this.userOnline(); // Mark user as online when the connection is established
+        this.userOnline(); // Mark user as online when the connection is established        
+        // if (this.gid) {
+        //   console.log("Joining group in signal",this.gid)
+        //   this.joinGroup(this.gid);
+        // }
         this.setupListeners();
-        if (this.gid) {
-          this.joinGroup(this.gid);
-        }
       })
       .catch(err => {
         console.error("Error starting SignalR connection:", err.toString());
@@ -108,11 +109,16 @@ class SignalRService {
     });
 
     this.connection.on("ReceiveGrpMessage", (user,groupmsg) => {
-      console.log(`${groupmsg.senderId}: ${groupmsg.message}`,this.gid);
-      if (this.receiveGroupMessageCallback) {
-        console.log("Received grp msg from backend")
-        this.receiveGroupMessageCallback(groupmsg);
-      }
+      console.log("-------------------------------",groupmsg)
+      // console.log(`${groupmsg.senderId}: ${groupmsg.message}`,this.gid);
+      
+      console.log(`${groupmsg.senderId}: ${groupmsg.message}`,groupmsg.id,this.currentGroupName);
+      //if (this.currentGroupName === groupmsg.id) { 
+        if (this.receiveGroupMessageCallback) {
+          console.log("Received grp msg from backend")
+          this.receiveGroupMessageCallback(groupmsg);
+        }
+      //}
     });
 
 
@@ -204,6 +210,9 @@ class SignalRService {
   changeReceiver(receiverId) {
     this.receiverId = receiverId;
   }
+  // changeReceiver(GreceiverId) {
+  //   this.GreceiverId = GreceiverId;
+  // }
 
   userOnline() {
     this.ensureConnection();
@@ -240,22 +249,113 @@ class SignalRService {
     }
   }
 
-  joinGroup(groupName) {
+  // joinGroup(groupName) {
+  //   this.ensureConnection();
+  //   if (this.connection) {
+  //     console.log("Joined grouppppppppp - ",groupName)
+  //     this.connection.invoke("JoinGroup", groupName)
+  //         .catch(err => console.error("Error joining group:", err.toString()));
+  //   }
+  // }
+
+  //latest
+  // joinGroup(groupName) {
+  //   this.ensureConnection();
+  //   if (this.connection) {
+  //     if (this.currentGroupName) {
+  //       this.leaveGroup(this.currentGroupName);
+  //     }
+  //     console.log("Joined group - ", groupName);
+  //     this.connection.invoke("JoinGroup", groupName)
+  //       .then(() => {
+  //         this.currentGroupName = groupName;
+  //       })
+  //       .catch(err => console.error("Error joining group:", err.toString()));
+  //   }
+  // }
+
+  changeGroup(groupName) {
+    if (this.currentGroupName) {
+        this.leaveGroup(this.currentGroupName);
+    }
+    this.currentGroupName = groupName;
+    this.joinGroup(groupName);
+  }
+
+  joinGroup(groupid) {
+    this.ensureConnection();
+    console.log("Joining group - ", groupid);
+    if (this.connection) {
+      this.connection.invoke("JoinGroup", groupid)
+        .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+  // joinGroup(newGroupName) {
+  //   const currentGroupName = localStorage.getItem("currentGroupName");
+  //   this.ensureConnection();
+  //   if (this.connection) {
+  //     if (currentGroupName && currentGroupName !== newGroupName) {
+  //       this.switchGroup(currentGroupName, newGroupName);
+  //     } else {
+  //       this.connection.invoke("JoinGroup", newGroupName)
+  //         .catch(err => console.error("Error joining group:", err.toString()));
+  //     }
+  //     localStorage.setItem("currentGroupName", newGroupName);
+  //   }
+  // }
+  // joinGroup(newGroupName) {
+  //   const currentGroupName = localStorage.getItem("currentGroupName");
+  //   this.ensureConnection();
+  //   if (this.connection) {
+  //       // if (currentGroupName && currentGroupName !== newGroupName) {
+  //       //     this.leaveGroup(currentGroupName); // Leave current group if different from new group
+  //       // }
+  //       // console.log("Invoking joingrp ,",currentGroupName,newGroupName)
+  //       // this.connection.invoke("JoinGroup", newGroupName)
+  //       //     .catch(err => console.error("Error joining group:", err.toString()));
+  //       // localStorage.setItem("currentGroupName", newGroupName);
+  //       this.connection.invoke("JoinGroup", newGroupName)
+  //   }
+  // }
+  leaveGroup(groupName) {
+    this.ensureConnection();
+    console.log("Leaving group - ", groupName);
+    if (this.connection) {
+      this.connection.invoke("LeaveGroup", groupName)
+        .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+  switchGroup(oldGroupName, newGroupName) {
     this.ensureConnection();
     if (this.connection) {
-      console.log("Joined grouppppppppp - ",groupName)
-      this.connection.invoke("JoinGroup", groupName)
-          .catch(err => console.error("Error joining group:", err.toString()));
+      this.connection.invoke("SwitchGroup",oldGroupName,newGroupName)
+      // this.leaveGroup(oldGroupName); // Leave the current group
+      // this.joinGroup(newGroupName);
     }
   }
 
-  sendGrpMessage(user, data, receiverId = null) {
+  // sendGrpMessage(user, data, receiverId = null) {
+  //   this.ensureConnection();
+  //   console.log("Sr from footer - ",this.userId,data,receiverId)    
+  //   if (this.connection) {
+  //     this.connection.invoke("SendToGroup", this.userId, receiverId, data)
+  //       .catch(err => console.error(err.toString()));        
+  //   }else{
+  //     console.error("SignalR connection is not established.");
+  //   }
+  // }
+  
+  sendGrpMessage(user, data, groupid) {
     this.ensureConnection();
-    console.log("Sr from footer - ",data)    
+    console.log("Sending group message - ",user, groupid,data);
     if (this.connection) {
-      this.connection.invoke("SendToGroup", this.userId, receiverId, data)
-        .catch(err => console.error(err.toString()));        
-    }else{
+      this.connection.invoke("SendToGroup",user, groupid, data)
+        .catch(err => console.error(err.toString()));
+    } else {
       console.error("SignalR connection is not established.");
     }
   }

@@ -5,7 +5,8 @@
   import { set } from "react-hook-form";
 
   function Conversation({ setShow, setMessage, person, showPerson, allMessages, setAllMessages,allGMessages,setAllGMessages,un,setUN,freshgrp,setFreshGrp
-    , grpperson, showGrpPerson}) {
+    , grpperson, showGrpPerson,selectedGroup,
+    setSelectedGroup}) {
     const [search, setSearch] = useState("");
     const [prevMessages, setPrevMessages] = useState([]);
     const [finalmsg,setFinalMsg]=useState([]);
@@ -52,6 +53,8 @@
           showGrpPerson={showGrpPerson}
           finalmsg={finalmsg}
           setFinalMsg={setFinalMsg}
+          selectedGroup={selectedGroup}
+          setSelectedGroup={setSelectedGroup}
         />
         <Footer person={person} grpperson={grpperson} prevMessages={prevMessages} setPrevMessages={setPrevMessages} allMessages={allMessages}
           setAllMessages={setAllMessages} allGMessages={allGMessages}

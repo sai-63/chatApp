@@ -39,7 +39,11 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
   const [editGObject, setEditGObject] = useState({});
   const [editGMessage, setEditGMessage] = useState("");
   const handleDeleteClose = () => setShowDeleteModal(false);
+  const [currentGroup, setCurrentGroup] = useState(null);
   console.log("Enter convo un--",un)
+  const [gmessages, setGMessages] = useState([]);
+
+ 
 
   const handleDeleteForEveryone = () => {
     if (user.userType==="user") {
@@ -186,17 +190,107 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     }
 
     if (user.userType === "group") {
-      console.log("Entered convo and group have ",finalmsg);
-      // axios
-      //   .get(`http://localhost:5290/Chat/GetGroupMessages?groupname=${grpperson.name}`)
-      //   .then((res) => {
-      //     setFinalMsg(res.data);
-      //     setIsLoaded(false)
-      //   });
-      setFinalMsg(allGMessages[grpperson.name])
-      setIsLoaded(false)
+      axios
+        .get(`http://localhost:5290/Chat/Getgroupid?gname=${grpperson.name}`)
+        .then((res)=>{
+          //localStorage.setItem("groupid", res.data);
+           
+          console.log("Callling change grp ",res,res.data)
+          //SignalRService.joinGroup(res.data)
+        })
+
+        //SignalRService.joinGroup(grpperson.name)        
+        localStorage.setItem("groupid",grpperson.id) 
+      SignalRService.joinGroup(grpperson.name)
+      console.log("Setting allg   --",allGMessages[grpperson.name],localStorage.getItem("groupid"))
+      setFinalMsg(allGMessages[grpperson.name]);
+      setIsLoaded(false);
     }
   }, [person, grpperson, user.userType]);
+  useEffect(() => {
+    if (grpperson?.id) {
+      const groupMessages = allGMessages[grpperson.name] || [];
+      setGMessages(groupMessages);
+      console.log("Group messages updated in conversation: ", groupMessages);
+    }
+  }, [grpperson, allGMessages])
+
+  // useEffect(()=>{
+  //   if (grpperson&& grpperson.name) {
+  //     axios
+  //     .get(`http://localhost:5290/Chat/GetUserGroupMessages?groupname=${grpperson.name}`)
+  //       .then((res)=>{
+  //         console.log("Newww",res.data)
+  //         setAllGMessages(res.data)
+  //       })    
+  //   }
+  // },[grpperson])
+  
+  //Latest
+  // useEffect(() => {
+  //   if (user.userType === "group") {
+      
+  //     //const newGroupName = grpperson.name;joinGroup
+  //     // const xy=axios.get(`http://localhost:5290/Chat/Getgroupid?gname=${grpperson.name}`)
+  //     // const newGroupName=xy.data
+
+  //     // const currentGroupName = localStorage.getItem("currentGroupName");
+  
+  //     // console.log("Bro changing group",currentGroupName,newGroupName)
+  //     // SignalRService.joinGroup(newGroupName)
+      
+  //     const currentGroupName = localStorage.getItem("currentGroupName");
+  //     const newGroupName = grpperson.name;
+
+  //   if (currentGroupName && currentGroupName !== newGroupName) {
+  //     SignalRService.leaveGroup(currentGroupName);
+  //     SignalRService.joinGroup(newGroupName);
+  //     localStorage.setItem("currentGroupName", newGroupName);
+  //   }else{
+  //     SignalRService.joinGroup(newGroupName);
+  //   }
+  
+  //     setFinalMsg(allGMessages[newGroupName]);
+  //     setIsLoaded(false);
+      
+  //   }
+
+  // }, [grpperson, user.userType, allGMessages]);
+  // useEffect(() => {
+  //   if (user.userType === "group") {
+  //     // axios.get(`http://localhost:5290/Chat/Getgroupid?gname=${grpperson.name}`)
+  //     //   .then(response => {
+  //     //     const newGroupName = response.data;
+  //     //     localStorage.setItem("currentGroupName", newGroupName);
+  //     //     //SignalRService.joinGroup(newGroupName);
+  //     //     console.log("Callling chnage grp ",newGroupName)
+  //     //     SignalRService.changeGroup(newGroupName)
+
+  //     //     setFinalMsg(allGMessages[newGroupName] || {});
+  //     //     setIsLoaded(false);
+  //     //   })
+  //     //   .catch(error => {
+  //     //     console.error("Error getting group ID:", error);
+  //     //   });
+  //     axios
+  //       .get(`http://localhost:5290/Chat/Getgroupid?gname=${grpperson.name}`)
+  //       .then((res)=>{
+  //         localStorage.setItem("currentGroupName", res.data);     
+  //         console.log("Callling change grp ",res,res.data)
+  //         SignalRService.joinGroup(res.data)
+  //       })
+
+      
+      
+  //     setFinalMsg(allGMessages[grpperson.name] || {});
+      
+  //     setIsLoaded(false);
+  //   }
+  //   // return () => {
+  //   //   const currentGroupName = localStorage.getItem("currentGroupName");
+  //   //   SignalRService.leaveGroup(currentGroupName);
+  //   // };
+  // }, [grpperson, user.userType, allGMessages]);
 
   useEffect(() => {
 
@@ -324,7 +418,9 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
           ...allGMessages,
           [grpperson.name]: updatedMessages
         };
-        })
+        }
+      )
+      
     })
 
     SignalRService.setEditGMessageCallback((messageId, newMessage, chatDate) => {
@@ -349,7 +445,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     SignalRService.setGrpRemoveMessageCallback((id, chatDate) => {
       removeGrpMessage(chatDate, id);
     });
-  },[grpperson])
+  },[grpperson.name])
 
   useEffect(() => {
     SignalRService.changeReceiver(person.id);
@@ -709,14 +805,16 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
           </div>
         ) : (
           <div className="mt-auto">
-            {Object.keys(allGMessages[grpperson.name]).map((dt) => (
+            {console.log("What problem",allGMessages)}
+            {/* {Object.keys(allGMessages[grpperson.name]).map((dt) => ( */}
+            {Object.keys(gmessages).map((dt) => (
               <div key={dt}>
                 <div className="text-center my-3">
                   <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
                     {getDay(dt)}
                   </div>
                 </div>
-                {allGMessages[grpperson.name][dt].map((obj, index) =>    
+                {gmessages[dt].map((obj, index) =>    
                 obj.senderId === host? (
                     <div
                       key={index}

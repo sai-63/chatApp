@@ -19,6 +19,7 @@
     const host = localStorage.getItem("userId");
     const [allMessages,setAllMessages] = useState({});
     const [unseenMessages,setUnseenMessages] = useState({});
+    const [unseenGMessages,setUnseenGMessages] = useState({});
     const [lastMessages,setLastMessages] = useState({});
 
     const [allGMessages,setAllGMessages]=useState({});
@@ -205,6 +206,7 @@
   
             const fetchGroupMessages = async () => {
               const newAllGMessages = {};
+              const newUnseenGMessages={}
               let ouno = null;
               const newFulldet={}
               try {
@@ -224,6 +226,15 @@
                   const response = await axios.get(
                     `http://localhost:5290/Chat/GetUserGroupMessages?groupname=${i}`
                   )
+                  let unseenGCount = 0;
+                  for (const messageList of Object.values(response.data)) {
+                    for (const message of messageList) {
+                      if (!message.isRead && message.receiverId === host) {
+                        unseenGCount++;
+                      }
+                    }
+                  }
+                  newUnseenGMessages[i.name] = unseenGCount;
                   const res=await axios.get(`http://localhost:5290/Chat/FullDetOfGroup?groupname=${i}`)
                   newAllGMessages[i]=response.data
                   newFulldet[i]=res.data
