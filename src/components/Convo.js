@@ -190,16 +190,21 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     }
 
     if (user.userType === "group") {
-      axios
-        .get(`http://localhost:5290/Chat/Getgroupid?gname=${grpperson.name}`)
-        .then((res)=>{
-          //localStorage.setItem("groupid", res.data);
-           
-          console.log("Callling change grp ",res,res.data)
-          //SignalRService.joinGroup(res.data)
-        })
-
-        //SignalRService.joinGroup(grpperson.name)        
+      // axios
+      //   .get(`http://localhost:5290/Chat/Getgroupid?gname=${localStorage.getItem("groupid")}`)
+      //   .then((res)=>{
+      //     //localStorage.setItem("groupid", res.data);
+      //     console.log("Leaving Grouppppp - ",localStorage.getItem("groupid"),res.data)
+      //      SignalRService.leaveGroup(res.data)
+      //     //console.log("Callling change grp ",res,res.data)
+      //     //SignalRService.joinGroup(res.data)
+      //   })
+      //  if()
+        //SignalRService.joinGroup(grpperson.name) 
+      if(localStorage.getItem("groupnaam")){
+        SignalRService.leaveGroup(localStorage.getItem("groupnaam"))
+      }
+      localStorage.setItem("groupnaam",grpperson.name)       
         localStorage.setItem("groupid",grpperson.id) 
       SignalRService.joinGroup(grpperson.name)
       console.log("Setting allg   --",allGMessages[grpperson.name],localStorage.getItem("groupid"))
@@ -207,13 +212,13 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       setIsLoaded(false);
     }
   }, [person, grpperson, user.userType]);
-  useEffect(() => {
-    if (grpperson?.id) {
-      const groupMessages = allGMessages[grpperson.name] || [];
-      setGMessages(groupMessages);
-      console.log("Group messages updated in conversation: ", groupMessages);
-    }
-  }, [grpperson, allGMessages])
+  // useEffect(() => {
+  //   if (grpperson?.id) {
+  //     const groupMessages = allGMessages[grpperson.name] || [];
+  //     setGMessages(groupMessages);
+  //     console.log("Group messages updated in conversation: ", groupMessages);
+  //   }
+  // }, [grpperson, allGMessages])
 
   // useEffect(()=>{
   //   if (grpperson&& grpperson.name) {
@@ -807,14 +812,14 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
           <div className="mt-auto">
             {console.log("What problem",allGMessages)}
             {/* {Object.keys(allGMessages[grpperson.name]).map((dt) => ( */}
-            {Object.keys(gmessages).map((dt) => (
+            {Object.keys(allGMessages[grpperson.name]).map((dt) => (
               <div key={dt}>
                 <div className="text-center my-3">
                   <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
                     {getDay(dt)}
                   </div>
                 </div>
-                {gmessages[dt].map((obj, index) =>    
+                {allGMessages[grpperson.name][dt].map((obj, index) =>    
                 obj.senderId === host? (
                     <div
                       key={index}
