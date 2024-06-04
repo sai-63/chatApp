@@ -76,7 +76,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
         .catch((err) => {
           console.log(err.message);
         });
-      SignalRService.removeGrpMessage(localStorage.getItem("groupid"), msgId, chatDate);
+      SignalRService.removeGrpMessage(grpperson.name, msgId, chatDate);
     }
     handleDeleteClose();
   };
@@ -190,113 +190,22 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     }
 
     if (user.userType === "group") {
-      // axios
-      //   .get(`http://localhost:5290/Chat/Getgroupid?gname=${localStorage.getItem("groupid")}`)
-      //   .then((res)=>{
-      //     //localStorage.setItem("groupid", res.data);
-      //     console.log("Leaving Grouppppp - ",localStorage.getItem("groupid"),res.data)
-      //      SignalRService.leaveGroup(res.data)
-      //     //console.log("Callling change grp ",res,res.data)
-      //     //SignalRService.joinGroup(res.data)
-      //   })
-      //  if()
-        //SignalRService.joinGroup(grpperson.name) 
-      if(localStorage.getItem("groupnaam")){
+      console.log("Init group name --",localStorage.getItem("groupnaam"))
+
+      if(localStorage.getItem("groupnaam")!==grpperson.name){
         SignalRService.leaveGroup(localStorage.getItem("groupnaam"))
+        localStorage.setItem("groupnaam",grpperson.name)        
       }
-      localStorage.setItem("groupnaam",grpperson.name)       
-        localStorage.setItem("groupid",grpperson.id) 
       SignalRService.joinGroup(grpperson.name)
+
+      localStorage.setItem("groupid",grpperson.id)
       console.log("Setting allg   --",allGMessages[grpperson.name],localStorage.getItem("groupid"))
       setFinalMsg(allGMessages[grpperson.name]);
       setIsLoaded(false);
     }
   }, [person, grpperson, user.userType]);
-  // useEffect(() => {
-  //   if (grpperson?.id) {
-  //     const groupMessages = allGMessages[grpperson.name] || [];
-  //     setGMessages(groupMessages);
-  //     console.log("Group messages updated in conversation: ", groupMessages);
-  //   }
-  // }, [grpperson, allGMessages])
 
-  // useEffect(()=>{
-  //   if (grpperson&& grpperson.name) {
-  //     axios
-  //     .get(`http://localhost:5290/Chat/GetUserGroupMessages?groupname=${grpperson.name}`)
-  //       .then((res)=>{
-  //         console.log("Newww",res.data)
-  //         setAllGMessages(res.data)
-  //       })    
-  //   }
-  // },[grpperson])
-  
-  //Latest
-  // useEffect(() => {
-  //   if (user.userType === "group") {
-      
-  //     //const newGroupName = grpperson.name;joinGroup
-  //     // const xy=axios.get(`http://localhost:5290/Chat/Getgroupid?gname=${grpperson.name}`)
-  //     // const newGroupName=xy.data
-
-  //     // const currentGroupName = localStorage.getItem("currentGroupName");
-  
-  //     // console.log("Bro changing group",currentGroupName,newGroupName)
-  //     // SignalRService.joinGroup(newGroupName)
-      
-  //     const currentGroupName = localStorage.getItem("currentGroupName");
-  //     const newGroupName = grpperson.name;
-
-  //   if (currentGroupName && currentGroupName !== newGroupName) {
-  //     SignalRService.leaveGroup(currentGroupName);
-  //     SignalRService.joinGroup(newGroupName);
-  //     localStorage.setItem("currentGroupName", newGroupName);
-  //   }else{
-  //     SignalRService.joinGroup(newGroupName);
-  //   }
-  
-  //     setFinalMsg(allGMessages[newGroupName]);
-  //     setIsLoaded(false);
-      
-  //   }
-
-  // }, [grpperson, user.userType, allGMessages]);
-  // useEffect(() => {
-  //   if (user.userType === "group") {
-  //     // axios.get(`http://localhost:5290/Chat/Getgroupid?gname=${grpperson.name}`)
-  //     //   .then(response => {
-  //     //     const newGroupName = response.data;
-  //     //     localStorage.setItem("currentGroupName", newGroupName);
-  //     //     //SignalRService.joinGroup(newGroupName);
-  //     //     console.log("Callling chnage grp ",newGroupName)
-  //     //     SignalRService.changeGroup(newGroupName)
-
-  //     //     setFinalMsg(allGMessages[newGroupName] || {});
-  //     //     setIsLoaded(false);
-  //     //   })
-  //     //   .catch(error => {
-  //     //     console.error("Error getting group ID:", error);
-  //     //   });
-  //     axios
-  //       .get(`http://localhost:5290/Chat/Getgroupid?gname=${grpperson.name}`)
-  //       .then((res)=>{
-  //         localStorage.setItem("currentGroupName", res.data);     
-  //         console.log("Callling change grp ",res,res.data)
-  //         SignalRService.joinGroup(res.data)
-  //       })
-
-      
-      
-  //     setFinalMsg(allGMessages[grpperson.name] || {});
-      
-  //     setIsLoaded(false);
-  //   }
-  //   // return () => {
-  //   //   const currentGroupName = localStorage.getItem("currentGroupName");
-  //   //   SignalRService.leaveGroup(currentGroupName);
-  //   // };
-  // }, [grpperson, user.userType, allGMessages]);
-
+ 
   useEffect(() => {
 
     SignalRService.setReceiveMessageCallback((chat) => {

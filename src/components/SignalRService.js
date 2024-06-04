@@ -210,9 +210,6 @@ class SignalRService {
   changeReceiver(receiverId) {
     this.receiverId = receiverId;
   }
-  // changeReceiver(GreceiverId) {
-  //   this.GreceiverId = GreceiverId;
-  // }
 
   userOnline() {
     this.ensureConnection();
@@ -249,76 +246,18 @@ class SignalRService {
     }
   }
 
-  // joinGroup(groupName) {
-  //   this.ensureConnection();
-  //   if (this.connection) {
-  //     console.log("Joined grouppppppppp - ",groupName)
-  //     this.connection.invoke("JoinGroup", groupName)
-  //         .catch(err => console.error("Error joining group:", err.toString()));
-  //   }
-  // }
-
-  //latest
-  // joinGroup(groupName) {
-  //   this.ensureConnection();
-  //   if (this.connection) {
-  //     if (this.currentGroupName) {
-  //       this.leaveGroup(this.currentGroupName);
-  //     }
-  //     console.log("Joined group - ", groupName);
-  //     this.connection.invoke("JoinGroup", groupName)
-  //       .then(() => {
-  //         this.currentGroupName = groupName;
-  //       })
-  //       .catch(err => console.error("Error joining group:", err.toString()));
-  //   }
-  // }
-
-  changeGroup(groupName) {
-    if (this.currentGroupName) {
-        this.leaveGroup(this.currentGroupName);
-    }
-    this.currentGroupName = groupName;
-    this.joinGroup(groupName);
-  }
-
-  joinGroup(groupid) {
+  
+  joinGroup(groupname) {
     this.ensureConnection();
-    console.log("Joining group - ", groupid);
+    console.log("Joining group - ", groupname);
     if (this.connection) {
-      this.connection.invoke("JoinGroup", groupid)
+      this.connection.invoke("JoinGroup", groupname)
         .catch(err => console.error(err.toString()));
     } else {
       console.error("SignalR connection is not established.");
     }
   }
-  // joinGroup(newGroupName) {
-  //   const currentGroupName = localStorage.getItem("currentGroupName");
-  //   this.ensureConnection();
-  //   if (this.connection) {
-  //     if (currentGroupName && currentGroupName !== newGroupName) {
-  //       this.switchGroup(currentGroupName, newGroupName);
-  //     } else {
-  //       this.connection.invoke("JoinGroup", newGroupName)
-  //         .catch(err => console.error("Error joining group:", err.toString()));
-  //     }
-  //     localStorage.setItem("currentGroupName", newGroupName);
-  //   }
-  // }
-  // joinGroup(newGroupName) {
-  //   const currentGroupName = localStorage.getItem("currentGroupName");
-  //   this.ensureConnection();
-  //   if (this.connection) {
-  //       // if (currentGroupName && currentGroupName !== newGroupName) {
-  //       //     this.leaveGroup(currentGroupName); // Leave current group if different from new group
-  //       // }
-  //       // console.log("Invoking joingrp ,",currentGroupName,newGroupName)
-  //       // this.connection.invoke("JoinGroup", newGroupName)
-  //       //     .catch(err => console.error("Error joining group:", err.toString()));
-  //       // localStorage.setItem("currentGroupName", newGroupName);
-  //       this.connection.invoke("JoinGroup", newGroupName)
-  //   }
-  // }
+
   leaveGroup(groupName) {
     this.ensureConnection();
     console.log("Leaving group - ", groupName);
@@ -349,11 +288,11 @@ class SignalRService {
   //   }
   // }
   
-  sendGrpMessage(user, data, groupid) {
+  sendGrpMessage(user, data, groupname) {
     this.ensureConnection();
-    console.log("Sending group message - ",user, groupid,data);
+    console.log("Sending group message - ",user, groupname,data);
     if (this.connection) {
-      this.connection.invoke("SendToGroup",user, groupid, data)
+      this.connection.invoke("SendToGroup",user, groupname, data)
         .catch(err => console.error(err.toString()));
     } else {
       console.error("SignalR connection is not established.");
