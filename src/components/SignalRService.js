@@ -268,26 +268,7 @@ class SignalRService {
       console.error("SignalR connection is not established.");
     }
   }
-  switchGroup(oldGroupName, newGroupName) {
-    this.ensureConnection();
-    if (this.connection) {
-      this.connection.invoke("SwitchGroup",oldGroupName,newGroupName)
-      // this.leaveGroup(oldGroupName); // Leave the current group
-      // this.joinGroup(newGroupName);
-    }
-  }
 
-  // sendGrpMessage(user, data, receiverId = null) {
-  //   this.ensureConnection();
-  //   console.log("Sr from footer - ",this.userId,data,receiverId)    
-  //   if (this.connection) {
-  //     this.connection.invoke("SendToGroup", this.userId, receiverId, data)
-  //       .catch(err => console.error(err.toString()));        
-  //   }else{
-  //     console.error("SignalR connection is not established.");
-  //   }
-  // }
-  
   sendGrpMessage(user, data, groupname) {
     this.ensureConnection();
     console.log("Sending group message - ",user, groupname,data);
@@ -308,11 +289,11 @@ class SignalRService {
       console.error("SignalR connection is not established.");
     }
   }
-  removeGrpMessage(groupid, messageId, chatDate) {
+  removeGrpMessage(groupname, messageId, chatDate) {
     this.ensureConnection();
     if (this.connection) {
-      console.log("Gonna call backend with - ",groupid, messageId, chatDate)
-      this.connection.invoke("RemoveGrpMessage", groupid, messageId, chatDate)
+      console.log("Gonna call backend for del for all - ",groupname, messageId, chatDate)
+      this.connection.invoke("RemoveGrpMessage", groupname, messageId, chatDate)
         .catch(err => console.error(err.toString()));
     } else {
       console.error("SignalR connection is not established.");

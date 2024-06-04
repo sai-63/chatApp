@@ -343,7 +343,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     const removeGrpMessage = (chatDate, messageId) => {
       setAllGMessages(allGMessages => {
         const updatedMessages = { ...allGMessages[grpperson.name] };
-        console.log("going to set alllg after del",updatedMessages)
+        console.log("going to set alllg after del",updatedMessages,chatDate,messageId)
         if (updatedMessages[chatDate]) {          
           updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.id !== messageId);
           if (updatedMessages[chatDate].length === 0) {
