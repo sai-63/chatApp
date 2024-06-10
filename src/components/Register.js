@@ -37,7 +37,7 @@ return istTimeString;
       Password: password,
       Email: email,
       Nickname: nickname,
-      IsOnline: false,
+      UserStatus: "Offline",
       LastSeen: getLastSeen(),
       Friends: []
     };

@@ -23,7 +23,7 @@ function Login() {
       Password:password,
       Email:'',
       Nickname:'',
-      IsOnline:false,
+      UserStatus:"Offline",
       Friends:[]
     };
     axios.post(url,data)
@@ -36,7 +36,7 @@ function Login() {
             localStorage.setItem("username",username);
             localStorage.setItem("userId",dt.id);
             SignalRService.startConnection();
-            navigate("/chat");
+            navigate("/");
         }else{
             alert('Invalid Credentials');
         }

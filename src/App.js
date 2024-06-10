@@ -14,10 +14,6 @@ function App() {
       element: <RootLayout />,
       children: [
         {
-          path: "/",
-          element: <Home />,
-        },
-        {
           path: "/register",
           element: <Register />,
         },
@@ -26,7 +22,7 @@ function App() {
           element: <Login />,
         },
         {
-          path: "/chat",
+          path: "/",
           element: <Chat />,
         },
         {

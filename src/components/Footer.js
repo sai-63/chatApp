@@ -8,7 +8,7 @@ import { BsEmojiSunglasses } from "react-icons/bs";
 import { GrAttachment } from "react-icons/gr";
 import SignalRService from './SignalRService';
 
-function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessages, allMessages, setAllMessages }) {
+function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessages, allMessages, setAllMessages, replyObject, setReplyObject }) {
   let { handleSubmit } = useForm();
   const host = localStorage.getItem("userId");
   const username = localStorage.getItem("username");
@@ -32,6 +32,7 @@ function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessag
   async function submitMessage() {
     setSpin(true);
     value = value.trimStart();
+    const replyToMessageId = replyObject.replyToMessageId === undefined ? null : replyObject.messageId;
     const messageId = generateUUID();
     const timestamp = new Date().toISOString();
     const formData = new FormData();
@@ -40,6 +41,7 @@ function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessag
     formData.append('Message', value);
     formData.append('MessageId', messageId);
     formData.append('Timestamp', timestamp);
+    formData.append('ReplyToMessageId', replyToMessageId);
 
     let data = {
       messageId: messageId,
@@ -49,6 +51,7 @@ function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessag
       isRead: false,
       senderRemoved: false,
       timestamp: timestamp,
+      replyToMessageId: replyToMessageId,
       fileContent: null,
       fileName: null,
       fileType: null,
@@ -91,40 +94,51 @@ function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessag
       })
         .then((res) => {
           setValue("");
-          //   setSpin(false);
-          //   alert('Message successfully sent');
-          //   const chatDate = new Date(data.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
-
-          // // setAllMessages(allMessages => {
-          // //   const updatedMessages = { ...allMessages[person.username] };
-
-          // //   if (updatedMessages[chatDate]) {
-          // //     updatedMessages[chatDate] = [...updatedMessages[chatDate], data]; // Append chat to existing date's messages
-          // //   } else {
-          // //     updatedMessages[chatDate] = [data]; // Create a new list for the date if it doesn't exist
-          // //   }
-
-          //   return {
-          //     ...allMessages,
-          //     [person.username]: updatedMessages
-          //   };
-          // });
         })
         .catch((error) => {
           console.log(error);
         });
       console.log(host, " is sending to the Person.id:", person.id);
-      SignalRService.sendMessage(host, data, person.id); // Send message via SignalR
+      SignalRService.sendMessage(host, data, person.id, username); // Send message via SignalR
       SignalRService.incrementUnseenMessages(person.id, username);
       SignalRService.sortChats(person.id, username, timestamp);
       SignalRService.sortChats(host, person.username, timestamp);
       setDisabled(false);
+      setReplyObject({});
     }
   }
 
-  function handleChange(event) {
-    setValue(event.target.value);
-  }
+  const [isTyping, setIsTyping] = useState(false);
+
+  useEffect(() => {
+    let typingTimeout;
+    
+    if (isTyping) {
+      SignalRService.userTyping(person.id, username, "typing...");
+    } else if (value.length === 0) {
+      SignalRService.userTyping(person.id, username, "Online");
+    }
+
+    if (isTyping) {
+      // Set a timeout to check if user has stopped typing
+      typingTimeout = setTimeout(() => {
+        setIsTyping(false);
+      }, 1000); // Adjust timeout duration as needed
+    }
+
+    return () => {
+      clearTimeout(typingTimeout);
+    };
+  }, [isTyping, value, person.id, username]);
+
+  const handleChange = (event) => {
+    const inputValue = event.target.value;
+    setValue(inputValue);
+
+    if (!isTyping) {
+      setIsTyping(true);
+    }
+  };
   function handleEmoji(emoji) {
     setValue(value + emoji.emoji);
   }

@@ -18,20 +18,40 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckDouble } from '@fortawesome/free-solid-svg-icons';
 import SignalRService from './SignalRService';
 
-function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessages, allMessages, setAllMessages }) {
+function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessages, allMessages, setAllMessages,  replyObject, setReplyObject}) {
   const host = localStorage.getItem("userId");
   const username = localStorage.getItem("username");
+  const [floatingCard, setFloatingCard] = useState(null);
   let [isLoaded, setIsLoaded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editObject, setEditObject] = useState({});
   const [state, setState] = useState(true);
   const [scroll, setScroll] = useState(false);
+  const scrollRef = useRef(null);
+  const messageRefs = useRef({});
   const [editMessage, setEditMessage] = useState("");
-  const [isRead, setIsRead] = useState(false);
+  const [showReceivedDeleteModal,setShowReceivedDeleteModal] = useState(false); 
   const [showDeleteModal, setShowDeleteModal] = useState(false); // State for delete modal
   const [deleteObject, setDeleteObject] = useState({}); // Adjust this as per your delete object structure
 
+  const handleReplyClick = (obj) => {
+    setReplyObject(obj);
+    setFloatingCard(obj);
+  };
+
+  useEffect(()=>{
+    if(replyObject.messageId===undefined){
+      setFloatingCard(null);
+    }
+  },[replyObject]);
+
+  const closeFloatingCard = () => {
+    setReplyObject({});
+    setFloatingCard(null);
+  };
+
   const handleDeleteClose = () => setShowDeleteModal(false);
+  const handleReceivedDeleteClose = () => setShowReceivedDeleteModal(false);
 
   const handleDeleteForEveryone = () => {
     const chatDate = new Date(deleteObject.timestamp).toISOString().split('T')[0];
@@ -46,7 +66,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       .catch((err) => {
         console.log(err.message);
       });
-    SignalRService.removeMessage(person.id, msgId, chatDate);
+    SignalRService.removeMessage(person.id, msgId, chatDate, username);
     SignalRService.sortChats(person.id,null,deleteObject.timestamp);
     SignalRService.sortChats(host,null,deleteObject.timestamp);
     handleDeleteClose();
@@ -87,6 +107,47 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     handleDeleteClose();
   };
 
+  const handleReceivedDeleteForMe = () => {
+    // const chatDate = new Date(deleteObject.timestamp).toISOString().split('T')[0];
+    // const msgId = deleteObject.messageId;
+
+    // setAllMessages(allMessages => {
+    //   const updatedMessages = { ...allMessages[person.username] };
+
+    //   if (updatedMessages[chatDate]) {
+    //     updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.messageId !== msgId);
+
+    //     if (updatedMessages[chatDate].length === 0) {
+    //       delete updatedMessages[chatDate];
+    //     }
+    //   }
+
+    //   return {
+    //     ...allMessages,
+    //     [person.username]: updatedMessages
+    //   };
+    // });
+
+    // axios
+    //   .post(
+    //     "http://localhost:5290/Chat/DeleteMessageForMe?messageId=" + msgId
+    //   )
+    //   .then((res) => {
+    //     console.log(res.data.message);
+    //   })
+    //   .catch((err) => {
+    //     console.log(err.message);
+    //   });
+    //   SignalRService.sortChats(host,null,deleteObject.timestamp);
+    // handleReceivedDeleteClose();
+  };
+
+  function scrollDown() {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }
+
   function handleDeleteModal(obj, index) {
     setDeleteObject(obj);
     setShowDeleteModal(true);
@@ -102,8 +163,6 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     setEditObject({});
   }
 
-  const scrollRef = useRef(null);
-
   function scrollDown() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -112,18 +171,21 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
 
   useEffect(() => {
 
-    SignalRService.setReceiveMessageCallback((chat) => {
-      console.log("Person Nameeeeeeeeeeeeeeeeeeeeeeeee:",person.username);
+    SignalRService.setReceiveMessageCallback((chat, senderName) => {
       if (chat.receiverId === host) {
         axios.post('http://localhost:5290/Chat/markasread?messageIds', [chat.messageId])
           .then((response) => {
             console.log(response.data);
           })
+          if(person.username===senderName){
+            SignalRService.readMessage(chat.senderId, [chat.messageId], username);
+          }
+          SignalRService.incrementUnseenMessages(host, person.username, "seen");
       }
       const chatDate = new Date(chat.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
-
+      const userName = chat.senderId === host ? person.username : senderName;
       setAllMessages(allMessages => {
-        const updatedMessages = { ...allMessages[person.username] };
+        const updatedMessages = { ...allMessages[userName] };
 
         if (updatedMessages[chatDate]) {
           updatedMessages[chatDate] = [...updatedMessages[chatDate], chat]; // Append chat to existing date's messages
@@ -133,14 +195,15 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
 
         return {
           ...allMessages,
-          [person.username]: updatedMessages
+          [userName]: updatedMessages
         };
       });
     });
 
-    const removeMessage = (chatDate, messageId) => {
+    const removeMessage = (chatDate, messageId, senderName) => {
+      const userName = username===senderName ? person.username : senderName;
       setAllMessages(allMessages => {
-        const updatedMessages = { ...allMessages[person.username] };
+        const updatedMessages = { ...allMessages[userName] };
         if (updatedMessages[chatDate]) {
           updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.messageId !== messageId);
           if (updatedMessages[chatDate].length === 0) {
@@ -149,20 +212,21 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
         }
         return {
           ...allMessages,
-          [person.username]: updatedMessages
+          [userName]: updatedMessages
         };
       });
     };
 
 
-    SignalRService.setRemoveMessageCallback((id, chatDate) => {
-      removeMessage(chatDate, id);
+    SignalRService.setRemoveMessageCallback((id, chatDate, senderName) => {
+      removeMessage(chatDate, id, senderName);
     });
 
     // Function to update the chat message with matching messageId from a specific date
-    const editMessage = (date, messageId, newMessage) => {
+    const editMessage = (date, messageId, newMessage, senderName) => {
+      const userName = username===senderName ? person.username : senderName;
       setAllMessages(allMessages => {
-        const updatedMessages = { ...allMessages[person.username] };
+        const updatedMessages = { ...allMessages[userName] };
         if (updatedMessages[date]) {
           updatedMessages[date] = updatedMessages[date].map(message =>
             message.messageId === messageId ? { ...message, message: newMessage } : message
@@ -171,39 +235,39 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
         // Update allMessages with updated messages for the person
         return {
           ...allMessages,
-          [person.username]: updatedMessages
+          [userName]: updatedMessages
         };
       });
     };
 
-    SignalRService.setEditMessageCallback((messageId, newMessage, chatDate) => {
-      editMessage(chatDate, messageId, newMessage);
+    SignalRService.setEditMessageCallback((messageId, newMessage, chatDate, senderName) => {
+      editMessage(chatDate, messageId, newMessage, senderName);
     });
 
-    const readMessage = (messageIds) => {
-      setAllMessages(allMessages => {
-        const updatedMessages = { ...allMessages[person.username] };
-        for (const key in updatedMessages) {
-          if (updatedMessages.hasOwnProperty(key)) {
-            const messageList = updatedMessages[key];
-            updatedMessages[key] = messageList.map(message => {
-              if (messageIds.includes(message.messageId)) {
-                return { ...message, isRead: true };
-              }
-              return message;
-            });
+    const readMessage = (messageIds, senderName) => {
+        setAllMessages(allMessages => {
+          const updatedMessages = { ...allMessages[senderName] };
+          for (const key in updatedMessages) {
+            if (updatedMessages.hasOwnProperty(key)) {
+              const messageList = updatedMessages[key];
+              updatedMessages[key] = messageList.map(message => {
+                if (messageIds.includes(message.messageId)) {
+                  return { ...message, isRead: true };
+                }
+                return message;
+              });
+            }
           }
-        }
-        // Update allMessages with updated prevMessages
-        return {
-          ...allMessages,
-          [person.username]: updatedMessages
-        };
-      });
+          // Update allMessages with updated prevMessages
+          return {
+            ...allMessages,
+            [senderName]: updatedMessages
+          };
+        });
     };
 
-    SignalRService.setReadMessageCallback((messageIds) => {
-      readMessage(messageIds);
+    SignalRService.setReadMessageCallback((messageIds, senderName) => {
+      readMessage(messageIds, senderName);
     });
   }, [person]);
 
@@ -214,33 +278,20 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
   const handleDownload = async (obj) => {
     try {
       const response = await axios.post('http://localhost:5290/Chat/DownloadFile', obj, {
-        responseType: 'blob' // Set response type to blob to handle file download
+        responseType: 'blob'
       });
-
-      // Determine content type from response headers
       const contentType = response.headers['content-type'];
-
-      // Create a URL for the blob and create a link to trigger download
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', obj.fileName); // Set file name
-
-      // If content type is known, set it for the downloaded file
+      link.setAttribute('download', obj.fileName);
       if (contentType) {
         link.setAttribute('type', contentType);
       }
-
       document.body.appendChild(link);
       link.click();
-
-      // Reset downloading state after successful download
-      // setDownloading(false);
     } catch (error) {
       console.error('Error downloading file:', error);
-      // Handle error
-      // Reset downloading state
-      //setDownloading(false);
     }
   };
 
@@ -266,29 +317,26 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       })
       .catch((err) => console.log(err.message));
     console.log('New messagessssssssssssssssssssssssss:', newMessages);
-    SignalRService.readMessage(person.id, newMessages);
-
+    SignalRService.readMessage(person.id, newMessages, username);
+    scrollDown();
   }, [person, search]);
 
 
   useEffect(() => {
     setState(!state);
-    // console.log("Prev messages changed in convo:",prevMessages);
   }, [prevMessages])
 
   useEffect(() => {
     setIsLoaded(true);
   }, [person]);
 
-  useEffect(() => {
+  useEffect(()=>{
     scrollDown();
-  }, [scroll]);
+  },[isLoaded,allMessages[person.username]]);
 
   useEffect(() => {
     setDeleteObject(deleteObject)
   }, [deleteObject]);
-
-
 
   if (!isLoaded) {
     return (
@@ -307,15 +355,6 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     const msgId = editObject.messageId;
     console.log("Edit Obj Msg Id : ", msgId);
     console.log("New Message is : ", editMessage);
-    setPrevMessages(prevMessages => {
-      const updatedMessages = { ...prevMessages };
-      return updatedMessages;
-    });
-    setAllMessages(allMessages => {
-      const updatedAllMessages = { ...allMessages };
-      updatedAllMessages[person.username] = prevMessages;
-      return updatedAllMessages;
-    });
     axios.post(`http://localhost:5290/Chat/EditMessage?messageId=${msgId}&newMessage=${editMessage}`)
       .then((res) => {
         console.log(res.data.message);
@@ -323,7 +362,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       .catch((err) => {
         console.log(err.message);
       });
-    SignalRService.editMessage(person.id, msgId, editMessage, chatDate);
+    SignalRService.editMessage(person.id, msgId, editMessage, chatDate, username);
     setShowModal(false);
     setEditMessage('');
   }
@@ -356,6 +395,25 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     return date;
   }
 
+  const getRepliedMessage = (messageId) => {
+    for (const date in allMessages[person.username]) {
+      for (const message of allMessages[person.username][date]) {
+        if (message.messageId === messageId) {
+          return message;
+        }
+      }
+    }
+    return null;
+  };
+
+  const scrollToMessage = (messageId) => {
+    if (messageRefs.current[messageId]) {
+      messageRefs.current[messageId].scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  };
 
   return (
     <div style={{ height: "82%", position: "relative" }}>
@@ -372,10 +430,13 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                     {getDay(date)}
                   </div>
                 </div>
-                {allMessages[person.username][date].map((obj, index) =>
-                  obj.senderId === host ? (
+                {allMessages[person.username][date].map((obj, index) => {
+                  const repliedMessage = obj.replyToMessageId !== "null" ? getRepliedMessage(obj.replyToMessageId) : null;
+
+                  return obj.senderId === host ? (
                     <div
                       key={index}
+                      ref={(el) => (messageRefs.current[obj.messageId] = el)}
                       className="ms-auto pe-3 mb-1 d-flex"
                       style={{ width: "60%", wordBreak: "break-word" }}
                     >
@@ -383,6 +444,12 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                         className="d-inline-block ms-auto fs-6 lead m-0 bg-success pt-1 pb-1 rounded text-white"
                         style={{ position: "relative" }}
                       >
+                        {repliedMessage ? (
+                          <div className="bg-dark text-white p-1 rounded mb-1" onClick={() => scrollToMessage(repliedMessage.messageId)}>
+                            <p className="m-0">{repliedMessage.message}</p>
+                          </div>
+                        ) : null}
+
                         {obj.fileType === null ? (
                           <div
                             className="d-flex flex-wrap ms-2 me-2 mt-1"
@@ -461,6 +528,9 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                             data-bs-toggle="dropdown"
                           />
                           <ul className="dropdown-menu p-0 text-center">
+                            <li className="text-center btn d-block" onClick={() => handleReplyClick(obj)}>
+                              <p className="dropdown-item m-0">Reply</p>
+                            </li>
                             <li className="text-center btn d-block" onClick={() => handleDeleteModal(obj, index)}>
                               <p className="dropdown-item m-0">Delete</p>
                             </li>
@@ -474,6 +544,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                   ) : (
                     <div
                       key={index}
+                      ref={(el) => (messageRefs.current[obj.messageId] = el)}
                       className="ps-2 mb-1"
                       style={{ width: "60%", wordBreak: "break-word" }}
                     >
@@ -481,6 +552,11 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                         className="lead m-0 fs-6 d-inline-block text-white bg-secondary p-3 pt-1 pb-1 rounded"
                         style={{ position: "relative" }}
                       >
+                        {repliedMessage ? (
+                          <div className="bg-dark text-white p-1 rounded mb-1" onClick={() => scrollToMessage(repliedMessage.messageId)}>
+                            <p className="m-0">{repliedMessage.message}</p>
+                          </div>
+                        ) : null}
                         {obj.fileType === null ? (
                           <div className="d-flex flex-wrap ms-2 me-2 d-inline" style={{ position: "relative" }}>
                             <p className="m-0 me-2" style={{ position: "relative" }}>
@@ -532,10 +608,25 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                             </div>
                           </div>
                         )}
+                        <div className="dropstart" style={{ position: "absolute", top: "0", right: "0" }}>
+                          <RiArrowDropDownLine
+                            className="dropdown-toggle fs-4"
+                            style={{ cursor: "pointer" }}
+                            data-bs-toggle="dropdown"
+                          />
+                          <ul className="dropdown-menu p-0 text-center">
+                            <li className="text-center btn d-block" onClick={() => handleReplyClick(obj)}>
+                              <p className="dropdown-item m-0">Reply</p>
+                            </li>
+                            <li className="text-center btn d-block" onClick={() => handleDeleteModal(obj, index)}>
+                              <p className="dropdown-item m-0">Delete</p>
+                            </li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
-                  )
-                )}
+                  );
+                })}
               </div>
             ))}
           </div>
@@ -543,7 +634,6 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
           <p className="lead text-secondary m-auto">Chat is Empty</p>
         )}
       </div>
-
       <BsChevronDoubleDown
         className="bg-secondary text-white p-1 btn fs-5"
         onClick={() => setScroll(!scroll)}
@@ -555,6 +645,30 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
           borderRadius: "50%",
         }}
       />
+      {floatingCard && (
+        <div
+          className="position-fixed bg-white border rounded p-3 shadow"
+          style={{
+            bottom: "80px",
+            right: "50px",
+            width: "1000px",
+            zIndex: 1000,
+            color: "black"
+          }}
+        >
+          <div className="d-flex justify-content-between align-items-center">
+            <strong>Replying to:</strong>
+            <button onClick={closeFloatingCard} className="btn-close" />
+          </div>
+          <div className="mt-2">
+            {floatingCard.message}
+            <div className="text-end" style={{ fontSize: "10px" }}>
+              {getCurrentTime(floatingCard.timestamp)}
+            </div>
+          </div>
+        </div>
+      )}
+
       <Modal centered size="sm" show={showModal} onHide={handleClose}>
         <Modal.Body>
           {`Input your new message..
@@ -566,6 +680,20 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
           <input id="msg" type="text" value={editMessage} onChange={(e) => setEditMessage(e.target.value)} required />
           <Button variant="success" onClick={handleEdit}>
             Edit
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal centered size="sm" show={showReceivedDeleteModal} onHide={handleReceivedDeleteClose}>
+        <Modal.Body>
+          Are you sure you want to delete this message?
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="warning" onClick={handleReceivedDeleteForMe}>
+            Delete for me
+          </Button>
+          <Button variant="secondary" onClick={handleReceivedDeleteClose}>
+            Cancel
           </Button>
         </Modal.Footer>
       </Modal>
