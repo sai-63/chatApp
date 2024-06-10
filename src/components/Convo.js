@@ -193,11 +193,10 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       console.log("Init group name --",localStorage.getItem("groupnaam"))
 
       if(localStorage.getItem("groupnaam")!==grpperson.name){
-        SignalRService.leaveGroup(localStorage.getItem("groupnaam"))
-        localStorage.setItem("groupnaam",grpperson.name)        
+        SignalRService.leaveGroup(localStorage.getItem("groupnaam"))        
+        localStorage.setItem("groupnaam",grpperson.name)
       }
       SignalRService.joinGroup(grpperson.name)
-
       localStorage.setItem("groupid",grpperson.id)
       console.log("Setting allg   --",allGMessages[grpperson.name],localStorage.getItem("groupid"))
       setFinalMsg(allGMessages[grpperson.name]);
@@ -340,12 +339,29 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     SignalRService.setEditGMessageCallback((messageId, newMessage, chatDate) => {
       editGMessage(chatDate, messageId, newMessage);
     });
-    const removeGrpMessage = (chatDate, messageId) => {
+    // const removeGrpMessage = (chatDate, messageId) => {
+    //   setAllGMessages(allGMessages => {
+    //     const updatedMessages = { ...allGMessages[grpperson.name] };
+    //     console.log("going to set alllg after del",updatedMessages,chatDate,messageId)
+    //     if (updatedMessages[chatDate]) {          
+    //       updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.id !== messageId);
+    //       if (updatedMessages[chatDate].length === 0) {
+    //         delete updatedMessages[chatDate];
+    //       }
+    //     }
+    //     return {
+    //       ...allGMessages,
+    //       [grpperson.name]: updatedMessages
+    //     };
+    //   });
+    // };
+    SignalRService.setGrpRemoveMessageCallback((id, chatDate) => {
+      //removeGrpMessage(chatDate, id);
       setAllGMessages(allGMessages => {
         const updatedMessages = { ...allGMessages[grpperson.name] };
-        console.log("going to set alllg after del",updatedMessages,chatDate,messageId)
+        console.log("going to set alllg after del",updatedMessages,chatDate,id)
         if (updatedMessages[chatDate]) {          
-          updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.id !== messageId);
+          updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.id !== id);
           if (updatedMessages[chatDate].length === 0) {
             delete updatedMessages[chatDate];
           }
@@ -354,12 +370,9 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
           ...allGMessages,
           [grpperson.name]: updatedMessages
         };
-      });
-    };
-    SignalRService.setGrpRemoveMessageCallback((id, chatDate) => {
-      removeGrpMessage(chatDate, id);
     });
-  },[grpperson.name])
+  })
+  },[grpperson])
 
   useEffect(() => {
     SignalRService.changeReceiver(person.id);
