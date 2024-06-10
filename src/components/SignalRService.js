@@ -18,6 +18,7 @@ class SignalRService {
     this.displayOfflineCallback = null;
     this.unseenMessagesCallback = null;
     this.sortChatsCallback = null;
+    this.userTypingCallback = null;
 
     window.addEventListener("beforeunload", (event) => {
       if (this.connection) {
@@ -86,33 +87,28 @@ class SignalRService {
   }
 
   setupListeners() {
-    this.connection.on("ReceiveMessage", (chat) => {
-      if ((this.userId === chat.senderId && this.receiverId === chat.receiverId) ||
-        (this.receiverId === chat.senderId && this.userId === chat.receiverId)) {
-        if (this.userId === chat.receiverId) {
-          this.readMessage(chat.senderId, [chat.messageId]);
-        }
+    this.connection.on("ReceiveMessage", (chat, receivername) => {
         if (this.receiveMessageCallback) {
-          this.receiveMessageCallback(chat);
+          this.receiveMessageCallback(chat,receivername);
         }
-      }
+      
     });
 
-    this.connection.on("MessageRemoved", (messageId, chatDate) => {
+    this.connection.on("MessageRemoved", (messageId, chatDate, senderName) => {
       if (this.removeMessageCallback) {
-        this.removeMessageCallback(messageId, chatDate);
+        this.removeMessageCallback(messageId, chatDate, senderName);
       }
     });
 
-    this.connection.on("MessageEdited", (messageId, newMessage, chatDate) => {
+    this.connection.on("MessageEdited", (messageId, newMessage, chatDate, senderName) => {
       if (this.editMessageCallback) {
-        this.editMessageCallback(messageId, newMessage, chatDate);
+        this.editMessageCallback(messageId, newMessage, chatDate, senderName);
       }
     });
 
-    this.connection.on("MessageRead", (messageIds) => {
+    this.connection.on("MessageRead", (messageIds, senderName) => {
       if (this.readMessageCallback) {
-        this.readMessageCallback(messageIds);
+        this.readMessageCallback(messageIds, senderName);
       }
     });
 
@@ -143,6 +139,12 @@ class SignalRService {
     this.connection.on("SortChats", (Username, timestamp) => {
       if (this.sortChatsCallback) {
         this.sortChatsCallback(Username, timestamp);
+      }
+    });
+
+    this.connection.on("UserTyping", (Username,status) => {
+      if (this.userTypingCallback) {
+        this.userTypingCallback(Username,status);
       }
     });
   }
@@ -199,11 +201,11 @@ class SignalRService {
     }
   }
 
-  sendMessage(user, data, receiverId = null) {
+  sendMessage(user, data, receiverId = null, receivername) {
     this.ensureConnection();
     if (this.connection) {
       if (receiverId) {
-        this.connection.invoke("SendToUser", this.userId, receiverId, data)
+        this.connection.invoke("SendToUser", this.userId, receiverId, receivername, data)
           .catch(err => console.error(err.toString()));
       } else {
         this.connection.invoke("SendMessage", this.userId, data)
@@ -214,30 +216,30 @@ class SignalRService {
     }
   }
 
-  removeMessage(receiverId, messageId, chatDate) {
+  removeMessage(receiverId, messageId, chatDate, senderName) {
     this.ensureConnection();
     if (this.connection) {
-      this.connection.invoke("RemoveMessage", receiverId, messageId, chatDate)
+      this.connection.invoke("RemoveMessage", receiverId, messageId, chatDate, senderName)
         .catch(err => console.error(err.toString()));
     } else {
       console.error("SignalR connection is not established.");
     }
   }
 
-  editMessage(receiverId, messageId, newMessage, chatDate) {
+  editMessage(receiverId, messageId, newMessage, chatDate, senderName) {
     this.ensureConnection();
     if (this.connection) {
-      this.connection.invoke("EditMessage", receiverId, messageId, newMessage, chatDate)
+      this.connection.invoke("EditMessage", receiverId, messageId, newMessage, chatDate, senderName)
         .catch(err => console.error(err.toString()));
     } else {
       console.error("SignalR connection is not established.");
     }
   }
 
-  readMessage(receiverId, messageIds) {
+  readMessage(receiverId, messageIds, senderName) {
     this.ensureConnection();
     if (this.connection) {
-      this.connection.invoke("MarkAsRead", receiverId, messageIds)
+      this.connection.invoke("MarkAsRead", receiverId, messageIds, senderName)
         .catch(err => console.error(err.toString()));
     } else {
       console.error("SignalR connection is not established.");
@@ -258,6 +260,16 @@ class SignalRService {
     this.ensureConnection();
     if (this.connection) {
       this.connection.invoke("SortChats", receiverId, Username, timestamp)
+        .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+
+  userTyping(receiverId,Username,status){
+    this.ensureConnection();
+    if (this.connection) {
+      this.connection.invoke("UserTyping", receiverId, Username, status)
         .catch(err => console.error(err.toString()));
     } else {
       console.error("SignalR connection is not established.");
@@ -302,6 +314,10 @@ class SignalRService {
 
   setSortChatsCallback(callback) {
     this.sortChatsCallback = callback;
+  }
+
+  setUserTypingCallback(callback) {
+    this.userTypingCallback = callback;
   }
 
 }

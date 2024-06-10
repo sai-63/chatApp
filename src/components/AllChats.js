@@ -25,7 +25,7 @@ function AllChats({ show, setShow, message, setMessage, person, showPerson, user
         const updatedUserIds = userIds.map(user => {
           if (user.username === Username) {
             userFound = true;
-            return { ...user, isOnline: true };
+            return { ...user, userStatus: "Online" };
           }
           return user;
         });
@@ -40,7 +40,7 @@ function AllChats({ show, setShow, message, setMessage, person, showPerson, user
       console.log("A user went offlineeeeeeeeee:", username);
       setUserIds((userIds) =>
         userIds.map(user =>
-          user.username === username ? { ...user, isOnline: false } : user
+          user.username === username ? { ...user, userStatus: "Offline" } : user
         )
       );
     });
@@ -151,8 +151,6 @@ function AllChats({ show, setShow, message, setMessage, person, showPerson, user
 
   const getLastMessage = (username) => {
     const userMessages = allMessages[username];
-    console.log("All Masssssss", allMessages);
-    console.log("User Masssssss", userMessages);
     if (userMessages) {
       const dateKeys = Object.keys(userMessages).sort();
 
@@ -207,7 +205,7 @@ function AllChats({ show, setShow, message, setMessage, person, showPerson, user
                   className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link"
                 >
                   <p className="lead ms-2 text-white fs-4 d-inline"> {obj.nickname} </p>
-                  <p className="lead ms-2 text-white fs-4 d-inline"> {obj.isOnline ? "Online" : "Offline"} </p>
+                  <p className="lead ms-2 text-white fs-4 d-inline"> {obj.userStatus} </p>
                   <p className="lead ms-2 text-white fs-4 d-inline"> {unseenMessages[obj.username]} </p>
                   <p className="lead ms-2 text-white fs-6 d-inline ms-auto mt-5 mb-0">
                     {getLastMessage(obj.username)}

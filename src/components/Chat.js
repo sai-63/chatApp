@@ -12,11 +12,16 @@ function Chat() {
   let [show, setShow] = useState(false);
   let [message, setMessage] = useState("");
   const [userIds, setUserIds] = useState([]);
-  const [friendIds, setFriendIds] = useState([]);
   const host = localStorage.getItem("userId");
   const [allMessages,setAllMessages] = useState({});
   const [unseenMessages,setUnseenMessages] = useState({});
   const [lastMessages,setLastMessages] = useState({});
+
+  useEffect(()=>{
+    if(host===null){
+      navigate("/login");
+    }
+  },[])
 
   useEffect(() => {
     if (host) {

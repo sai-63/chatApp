@@ -7,6 +7,7 @@ import { set } from "react-hook-form";
 function Conversation({ setShow, setMessage, person, showPerson, allMessages, setAllMessages }) {
   const [search, setSearch] = useState("");
   const [prevMessages, setPrevMessages] = useState([]);
+  const [replyObject , setReplyObject] = useState({});
   return (
     <>
       <Header person={person} showPerson={showPerson} setSearch={setSearch} />
@@ -19,9 +20,12 @@ function Conversation({ setShow, setMessage, person, showPerson, allMessages, se
         setPrevMessages={setPrevMessages}
         allMessages={allMessages}
         setAllMessages={setAllMessages}
+        replyObject={replyObject}
+        setReplyObject={setReplyObject}
+
       />
       <Footer person={person} prevMessages={prevMessages} setPrevMessages={setPrevMessages} allMessages={allMessages}
-        setAllMessages={setAllMessages}/>
+        setAllMessages={setAllMessages} replyObject={replyObject} setReplyObject={setReplyObject} />
     </>
   );
 }
