@@ -201,11 +201,11 @@ class SignalRService {
     }
   }
 
-  sendMessage(user, data, receiverId = null, receivername) {
+  sendMessage(user, data, receiverId = null,sendername, receivername) {
     this.ensureConnection();
     if (this.connection) {
       if (receiverId) {
-        this.connection.invoke("SendToUser", this.userId, receiverId, receivername, data)
+        this.connection.invoke("SendToUser", this.userId, receiverId, sendername, receivername, data)
           .catch(err => console.error(err.toString()));
       } else {
         this.connection.invoke("SendMessage", this.userId, data)

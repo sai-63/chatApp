@@ -85,6 +85,7 @@ function Chat() {
               });
   
               console.log("New User Ids :", newUserIds);
+              showPerson(newUserIds[0]);
               return newUserIds;
             });
           };

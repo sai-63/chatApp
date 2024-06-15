@@ -29,7 +29,7 @@ function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessag
     });
   }
 
-  async function submitMessage() {
+    async function submitMessage() {
     setSpin(true);
     value = value.trimStart();
     const replyToMessageId = replyObject.replyToMessageId === undefined ? null : replyObject.messageId;
@@ -99,7 +99,7 @@ function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessag
           console.log(error);
         });
       console.log(host, " is sending to the Person.id:", person.id);
-      SignalRService.sendMessage(host, data, person.id, username); // Send message via SignalR
+      SignalRService.sendMessage(host, data, person.id, username,person.username); // Send message via SignalR
       SignalRService.incrementUnseenMessages(person.id, username);
       SignalRService.sortChats(person.id, username, timestamp);
       SignalRService.sortChats(host, person.username, timestamp);
