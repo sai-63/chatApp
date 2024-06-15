@@ -171,19 +171,19 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
 
   useEffect(() => {
 
-    SignalRService.setReceiveMessageCallback((chat, senderName) => {
+    SignalRService.setReceiveMessageCallback((chat, userName) => {
+      console.log("Received the messageeeeee:",chat);
       if (chat.receiverId === host) {
         axios.post('http://localhost:5290/Chat/markasread?messageIds', [chat.messageId])
           .then((response) => {
             console.log(response.data);
           })
-          if(person.username===senderName){
+          if(person.username===userName){
             SignalRService.readMessage(chat.senderId, [chat.messageId], username);
           }
           SignalRService.incrementUnseenMessages(host, person.username, "seen");
       }
-      const chatDate = new Date(chat.timestamp).toISOString().split('T')[0]; // Extract date from timestamp
-      const userName = chat.senderId === host ? person.username : senderName;
+      const chatDate = new Date(chat.timestamp).toISOString().split('T')[0];
       setAllMessages(allMessages => {
         const updatedMessages = { ...allMessages[userName] };
 
@@ -269,7 +269,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     SignalRService.setReadMessageCallback((messageIds, senderName) => {
       readMessage(messageIds, senderName);
     });
-  }, [person]);
+  }, [person,allMessages]);
 
   useEffect(() => {
     SignalRService.changeReceiver(person.id);

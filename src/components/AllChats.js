@@ -5,7 +5,7 @@ import { CgProfile } from "react-icons/cg";
 import { NavLink } from "react-router-dom";
 import SignalRService from "./SignalRService";
 
-function AllChats({ show, setShow, message, setMessage, person, showPerson, userIds, setUserIds, allMessages, unseenMessages, setUnseenMessages }) {
+function AllChats({ show, setShow, message, setMessage, showPerson, userIds, setUserIds, allMessages, unseenMessages, setUnseenMessages }) {
   const [host, setHost] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [username, setUsername] = useState("");
@@ -17,6 +17,10 @@ function AllChats({ show, setShow, message, setMessage, person, showPerson, user
     setHost(userId);
     setUsername(username);
   }, []);
+
+  useEffect(()=>{
+    console.log("All Messages changed :",allMessages);
+  },[allMessages]);
 
   useEffect(() => {
     SignalRService.setOnlineUsersCallback((Username) => {
