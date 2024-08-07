@@ -183,6 +183,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
           }
           SignalRService.incrementUnseenMessages(host, person.username, "seen");
       }
+      var userName= userName==username ? person.username : userName;
       const chatDate = new Date(chat.timestamp).toISOString().split('T')[0];
       setAllMessages(allMessages => {
         const updatedMessages = { ...allMessages[userName] };
@@ -192,6 +193,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
         } else {
           updatedMessages[chatDate] = [chat]; // Create a new list for the date if it doesn't exist
         }
+        console.log("Is it workinggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg??????????????????");
 
         return {
           ...allMessages,

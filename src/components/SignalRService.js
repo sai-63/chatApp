@@ -205,7 +205,8 @@ class SignalRService {
     this.ensureConnection();
     if (this.connection) {
       if (receiverId) {
-        this.connection.invoke("SendToUser", this.userId, receiverId, sendername, receivername, data)
+        console.log("Sending to the user ::::::::::::::: "+" "+receiverId+" "+receivername)
+        this.connection.invoke("SendToUser", this.userId, receiverId, sendername, data)
           .catch(err => console.error(err.toString()));
       } else {
         this.connection.invoke("SendMessage", this.userId, data)
