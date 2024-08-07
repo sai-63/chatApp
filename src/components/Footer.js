@@ -99,6 +99,7 @@ function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessag
           console.log(error);
         });
       console.log(host, " is sending to the Person.id:", person.id);
+      console.log("Hiiiiiiiiiiiiiiiiii gsdvhgasssssssddddddf");
       SignalRService.sendMessage(host, data, person.id, username,person.username); // Send message via SignalR
       SignalRService.incrementUnseenMessages(person.id, username);
       SignalRService.sortChats(person.id, username, timestamp);
