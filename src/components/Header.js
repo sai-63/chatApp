@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect ,useContext} from "react";
 import { OverlayTrigger, Popover } from "react-bootstrap";
 import { AiOutlineSearch, AiOutlineCloseCircle } from "react-icons/ai";
 import { BiArrowBack } from "react-icons/bi";
 import { FiMoreVertical } from "react-icons/fi";
 import SignalRService from "./SignalRService";
 import socket from "./socket";
+import { UserContext } from "./UserContext";
 
-function Header({ person, showPerson, setSearch }) {
+function Header({ person, showPerson, setSearch ,grpperson,showGrpPerson}) {
   const [iconActive, setIconActive] = useState(true);
   const [typing, setTyping] = useState(null);
   const [userState, setUserState] = useState(person.userStatus==="Offline" ? "Last Online at "+new Date(person.lastSeen).toISOString().replace('T', ' ').substr(0, 19)+" "+getAMorPM(person.lastseen) : person.userStatus);
+  const { user, setUser } = useContext(UserContext);
 
   useEffect(() => {
     setUserState(person.userStatus==="Offline" ? "Last Online at "+new Date(person.lastSeen).toISOString().replace('T', ' ').substr(0, 19)+" "+getAMorPM(person.lastseen) : person.userStatus);
@@ -70,14 +72,21 @@ function Header({ person, showPerson, setSearch }) {
       <div className="d-flex align-items-center">
         <BiArrowBack
           onClick={() => showPerson({})}
-          className=""
+          className=""  
           style={{ cursor: "pointer" }}
         />
         <div className="ms-4 p-0">
           <span className="fs-5 p-0 m-0">
-            {person.username?.charAt(0).toUpperCase() + person.username?.slice(1)}
+          {user.userType=="user"? 
+            <div>{person.username?.charAt(0).toUpperCase() +person.username?.slice(1)}<p>{userState}</p></div>
+            :
+            <div>
+              <img src={grpperson.picUrl} alt={`${grpperson.name}'s photo`} 
+              style={{ width: '40px', height: '40px', borderRadius: '50%', marginRight: '10px' }} />
+              {grpperson.name?.charAt(0).toUpperCase() +grpperson.name?.slice(1)}
+            </div>
+          }
           </span>
-          <p>{userState}</p>
         </div>
       </div>
       <div className="ms-auto">

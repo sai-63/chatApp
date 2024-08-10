@@ -5,12 +5,16 @@ class SignalRService {
   constructor() {
     this.connection = null;
     this.receiveMessageCallback = null;
+    this.receiveGroupMessageCallback=null;
     this.removeMessageCallback = null;
+    this.removeGrpMessageCallback = null;
     this.editMessageCallback = null;
     this.readMessageCallback = null;
     this.isConnected = false;
     this.isConnecting = false;
     this.userId = null;
+    this.gn=null;
+    this.allg=[];
     this.username = null;
     this.onlineUsersCallback = null;
     this.displayOnlineCallback = null;
@@ -38,12 +42,22 @@ class SignalRService {
 
     this.userId = localStorage.getItem("userId");
     this.username = localStorage.getItem("username");
+    this.gid=localStorage.getItem("groupid")
+    this.gn=localStorage.getItem("gname")
+    //this.allgg=localStorage.getItem("allgg")
+    //this.allgg= JSON.parse(localStorage.getItem("allgg") || "[]");
+    const allggString = localStorage.getItem("allgg");
+    this.allg = allggString ? allggString.split(',') : [];
+    console.log("All GROUPS----",localStorage.getItem("allgg"),this.allg)
+    console.log("Out User connected:",this.userId,"Group id",this.gid);
+
 
     if (!this.userId) return;
 
     this.isConnecting = true;
 
-    const connectionUrl = `http://localhost:5290/notificationHub?userId=${this.userId}`;
+    //const connectionUrl = `http://localhost:5290/notificationHub?userId=${this.userId}`;
+    const connectionUrl = `http://localhost:5290/notificationHub?userId=${this.userId}&allg=${encodeURIComponent(this.allg.join(','))}`;
 
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl(connectionUrl)
@@ -90,15 +104,25 @@ class SignalRService {
     this.connection.on("ReceiveMessage", (chat, receivername) => {
         if (this.receiveMessageCallback) {
           this.receiveMessageCallback(chat,receivername);
-        }
-      
+        }      
     });
+    this.connection.on("ReceiveGrpMessage", (user,grpname,groupmsg) => {
+      if (this.receiveGroupMessageCallback) {
+        console.log("Received grp msg from backend",this.gn,grpname)
+        this.receiveGroupMessageCallback(grpname,groupmsg);
+      }      
+  });
 
     this.connection.on("MessageRemoved", (messageId, chatDate, senderName) => {
       if (this.removeMessageCallback) {
         this.removeMessageCallback(messageId, chatDate, senderName);
       }
     });
+    this.connection.on("GrpMessageRemoved", (groupName,messageId, chatDate) => {
+      if (this.removeGrpMessageCallback) {
+        this.removeGrpMessageCallback(groupName,messageId, chatDate);
+      }
+    });    
 
     this.connection.on("MessageEdited", (messageId, newMessage, chatDate, senderName) => {
       if (this.editMessageCallback) {
@@ -217,10 +241,31 @@ class SignalRService {
     }
   }
 
+  sendGrpMessage(user, data, groupname) {
+    this.ensureConnection();
+    console.log("Sending group message - ",user, groupname,data);
+    if (this.connection) {
+      this.connection.invoke("SendToGroup",user, groupname, data)
+        .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+
   removeMessage(receiverId, messageId, chatDate, senderName) {
     this.ensureConnection();
     if (this.connection) {
       this.connection.invoke("RemoveMessage", receiverId, messageId, chatDate, senderName)
+        .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+
+  removeGrpMessage(grpName,id,chatDate) {
+    this.ensureConnection();
+    if (this.connection) {
+      this.connection.invoke("RemoveGrpMessage",grpName,id,chatDate)
         .catch(err => console.error(err.toString()));
     } else {
       console.error("SignalR connection is not established.");
@@ -281,8 +326,16 @@ class SignalRService {
     this.receiveMessageCallback = callback;
   }
 
+  setReceiveGroupMessageCallback(callback) {
+    this.receiveGroupMessageCallback = callback;
+  }
+
   setRemoveMessageCallback(callback) {
     this.removeMessageCallback = callback;
+  }
+
+  setGrpRemoveMessageCallback(callback) {
+    this.removeGrpMessageCallback = callback;
   }
 
   setEditMessageCallback(callback) {

@@ -1,21 +1,33 @@
 import axios, { all } from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState,useContext} from "react";
 import { AiFillCloseCircle, AiOutlineSearch } from "react-icons/ai";
 import { CgProfile } from "react-icons/cg";
 import { NavLink } from "react-router-dom";
 import SignalRService from "./SignalRService";
+import { UserContext } from './UserContext';
+import 'bootstrap-icons/font/bootstrap-icons.css';
+import {Button,Icons}from 'react-bootstrap';
 
-function AllChats({ show, setShow, message, setMessage, showPerson, userIds, setUserIds, allMessages, unseenMessages, setUnseenMessages }) {
+function AllChats({ show, setShow, message, setMessage, person,showPerson,grpperson,showGrpPerson, userIds, setUserIds, allMessages, 
+                  unseenMessages, setUnseenMessages ,allGMessages,setAllGMessages,allGro,setAllGro,fulldet}) {
   const [host, setHost] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [username, setUsername] = useState("");
   const [inputValue, setInputValue] = useState('');
+
+  //Handle user group click
+  const { user, setUser } = useContext(UserContext);
+  let [usergroups,setUserGroups]=useState([]);
+  let [joingroup,setJoinGroup]=useState("");
+  let [juser,setJuser]=useState([]);
+  let [jmsgs,setJmsgs]=useState([]);  
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
     const username = localStorage.getItem("username");
     setHost(userId);
     setUsername(username);
+    console.log("he",userIds)
   }, []);
 
   useEffect(()=>{
@@ -134,6 +146,8 @@ function AllChats({ show, setShow, message, setMessage, showPerson, userIds, set
   };
 
   const showChat = (obj) => {
+    setUser({ ...user, userType: "user" });
+    console.log("Have------",user)
     const data = {
       userId: host,
       friendId: obj.id
@@ -147,6 +161,25 @@ function AllChats({ show, setShow, message, setMessage, showPerson, userIds, set
     SignalRService.incrementUnseenMessages(host, obj.username, "seen");
     showPerson(obj);
   };
+
+  //Group CHat
+  const groupChat=(gobj)=>{
+    setUser({ ...user, userType: "group" });
+    console.log("Have------",user)
+    localStorage.setItem("gname",gobj.name)
+    console.log("Bro u clicked group",localStorage.getItem("gname"))
+    console.log("We got on clicking grp is ",gobj,gobj.id)    
+    localStorage.setItem("receiver",gobj.id)
+    showGrpPerson(gobj)
+    console.log("set gmsg at allchats ",gobj.messages)
+    axios
+      .get("http://localhost:5290/Chat/Getgroupid",{params:{gname:gobj.name}})
+      .then((res)=>{
+        console.log("Hooray",res.data);        
+        localStorage.setItem("groupid",res.data);
+      }
+    )    
+  }
 
   const handleShow = () => {
     setShow(false);
@@ -174,6 +207,152 @@ function AllChats({ show, setShow, message, setMessage, showPerson, userIds, set
     return '';
   };
 
+  //GROUPS
+  // function createGroup() {
+  //   const groupName = prompt("Enter group name:");
+  //   axios
+  //     .get("http://localhost:5290/Chat/GetAllGroups")
+  //     .then((res) => {
+  //       const existingGroup = res.data.find((group) => group.name === groupName);
+  //       if (existingGroup) {
+  //         alert("Group name already exists. Please choose a different name.");
+  //       } else {
+  //         console.log("New group super");
+  //         axios
+  //         .post("http://localhost:5290/Chat/CreateGroup", {
+  //           name: groupName,
+  //           users: [username],
+  //           messages: [],
+  //         })
+  //         .then((res) => {
+  //           const newGroup={ id: res.data.id, name: groupName, users: [username], messages: []};
+  //           setUserGroups([
+  //             ...usergroups,newGroup]);
+  //             console.log('This is the group',usergroups);
+  //         console.log("Created Successfully")
+  //         })
+  //         .catch((err) => console.log(err));
+  //       }
+  //     })
+  //     .catch((e)=>console.log(e));      
+  // }
+
+  // //Join Group
+  // function joinGroup(){
+  //   const gname = prompt("Enter group name to joinnnnnn:");
+  //   console.log('grpname',gname,username);    
+  //   const data={username:username,groupname:gname}
+  //   axios
+  //     .get("http://localhost:5290/Chat/GetUserOfGroup",{params:{groupname:data.groupname}})
+  //     .then((res)=>{
+  //       setJuser(res.data)
+  //       console.log("In Getusersofgroup ",data.groupname,juser)
+  //     })
+  //   // axios
+  //   //   .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:data.groupname}})
+  //   //   .then((res)=>{
+  //   //     setJmsgs(res.data)
+  //   //     console.log("In Getgroupmessages ",data.groupname)
+  //   //   })
+  //   setJmsgs(allGMessages[data.groupname])
+  //   if(gname&&username){
+  //     axios
+  //       .post("http://localhost:5290/Chat/AddUsersToGroup", data)
+  //       .then((res) => {
+  //         console.log("User added to group",joingroup);
+          
+  //         const newjoining={id:res.data.id,name:gname,users:juser,messages:jmsgs}
+  //         setUserGroups([...usergroups,newjoining])
+  //       })
+  //       .catch((err) => console.log(err));
+  //   }
+  // }
+  function addurfrnd(group){
+    const frndname = prompt("Enter frnd name :");
+    console.log('grpname',group.name,frndname);    
+    const fdata={username:frndname,groupname:group.name}
+    axios
+      .get("http://localhost:5290/Chat/GetUserOfGroup",{params:{groupname:fdata.groupname}})
+      .then((res)=>{
+        setJuser(res.data)
+        console.log("In Getusersofgroup ",fdata.groupname,juser)
+    })
+    // axios
+    //   .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:fdata.groupname}})
+    //   .then((res)=>{
+    //     setJmsgs(res.data)
+    //     console.log("In Getgroupmessages ",fdata.messages)
+    // })
+    setJmsgs(allGMessages[fdata.groupname])
+    axios
+      .post("http://localhost:5290/Chat/AddUsersToGroup", fdata)
+      .then((res) => {
+        console.log("User added to group",joingroup);
+        const fnewjoining={id:res.data.id,name:fdata.name,users:juser,messages:jmsgs}
+        setUserGroups([...usergroups,fnewjoining])
+      })
+      .catch((err) => console.log(err));    
+  }
+  function createGroup() {
+    const groupName = prompt("Enter group name:");
+    axios
+      .get("http://localhost:5290/Chat/GetAllGroups")
+      .then((res) => {
+        const existingGroup = res.data.find((group) => group.name === groupName);
+        if (existingGroup) {
+          alert("Group name already exists. Please choose a different name.");
+        } else {
+          console.log("New group super");
+          axios
+          .post("http://localhost:5290/Chat/CreateGroup", {
+            name: groupName,
+            users: [username],
+            messages: [],
+          })
+          .then((res) => {
+            const newGroup={ id: res.data.id, name: groupName, users: [username], messages: []};
+            setUserGroups([
+              ...usergroups,newGroup]);
+              console.log('This is the group',usergroups);
+          console.log("Created Successfully")
+          })
+          .catch((err) => console.log(err));
+        }
+      })
+      .catch((e)=>console.log(e));      
+  }
+
+  //Join Group
+  function joinGroup(){
+    const gname = prompt("Enter group name to joinnnnnn:");
+    console.log('grpname',gname,username);    
+    const data={username:username,groupname:gname}
+    axios
+      .get("http://localhost:5290/Chat/GetUserOfGroup",{params:{groupname:data.groupname}})
+      .then((res)=>{
+        setJuser(res.data)
+        console.log("In Getusersofgroup ",data.groupname,juser)
+      })
+    // axios
+    //   .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:data.groupname}})
+    //   .then((res)=>{
+    //     setJmsgs(res.data)
+    //     console.log("In Getgroupmessages ",data.groupname)
+    //   })
+    setJmsgs(allGMessages[data.groupname])
+    if(gname&&username){
+      axios
+        .post("http://localhost:5290/Chat/AddUsersToGroup", data)
+        .then((res) => {
+          console.log("User added to group",joingroup);
+          
+          const newjoining={id:res.data.id,name:gname,users:juser,messages:jmsgs}
+          setUserGroups([...usergroups,newjoining])
+        })
+        .catch((err) => console.log(err));
+    }
+  }
+
   return (
     <div className="chats overflow-auto" style={{ maxHeight: "100%" }}>
       <h1 className="lead fs-3 text-center m-2 mt-4">
@@ -197,6 +376,16 @@ function AllChats({ show, setShow, message, setMessage, showPerson, userIds, set
         />
       </div>
       <hr />
+      <div className="button-container mt-auto">
+        <div className="d-flex justify-content-between align-items-center m-3">
+          <Button className="btn me-3" onClick={createGroup}>
+            Create<i class="bi bi-collection"></i>
+          </Button>
+          <Button className="btn me-3" onClick={joinGroup}>
+            Join<i class="bi bi-collection-fill"></i>
+          </Button>
+        </div>
+      </div>
       <p className="lead ms-2">Your Chats</p>
       <hr className="w-50 ms-1 m-0" />
       <div className="" style={{ position: "relative" }}>
@@ -222,6 +411,17 @@ function AllChats({ show, setShow, message, setMessage, showPerson, userIds, set
               </React.Fragment>
             )
         )}
+        {Object.entries(allGMessages)?.map(([groupName, group]) => (          
+          <div key={groupName} className="mt-3 d-flex justify-content-between align-items-center">
+            <div>
+              {console.log('Name and msgs are',groupName,group)}
+              <NavLink onClick={()=> groupChat(fulldet[groupName]) } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">
+                <p className="lead ms-2 text-white fs-4 d-inline"> {groupName} </p>
+              </NavLink>
+            </div>
+            <div><Button onClick={()=>addurfrnd(fulldet[groupName])}><i class="bi bi-person-fill-add"></i></Button></div>
+          </div>        
+        ))}
       </div>
 
       {show && (
