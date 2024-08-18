@@ -29,6 +29,16 @@ function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessag
     });
   }
 
+  function encrypt(message, userid) {
+    let encryptedMessage = '';
+    for (let i = 0; i < message.length; i++) {
+        // XOR each character of the message with a character from the userid
+        let charCode = message.charCodeAt(i) ^ userid.charCodeAt(i % userid.length);
+        encryptedMessage += String.fromCharCode(charCode);
+    }
+    return encryptedMessage;
+}
+
     async function submitMessage() {
     setSpin(true);
     value = value.trimStart();
@@ -36,9 +46,10 @@ function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessag
     const messageId = generateUUID();
     const timestamp = new Date().toISOString();
     const formData = new FormData();
+    const encryptmessage = encrypt(value,host);
     formData.append('SenderId', host);
     formData.append('ReceiverId', person.id);
-    formData.append('Message', value);
+    formData.append('Message', encryptmessage);
     formData.append('MessageId', messageId);
     formData.append('Timestamp', timestamp);
     formData.append('ReplyToMessageId', replyToMessageId);
@@ -47,7 +58,7 @@ function Footer({ person, messageObj, setMessageObj, prevMessages, setPrevMessag
       messageId: messageId,
       senderId: host,
       receiverId: person.id,
-      message: value,
+      message: encryptmessage,
       isRead: false,
       senderRemoved: false,
       timestamp: timestamp,

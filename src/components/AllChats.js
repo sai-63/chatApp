@@ -5,7 +5,7 @@ import { CgProfile } from "react-icons/cg";
 import { NavLink } from "react-router-dom";
 import SignalRService from "./SignalRService";
 
-function AllChats({ show, setShow, message, setMessage, showPerson, userIds, setUserIds, allMessages, unseenMessages, setUnseenMessages }) {
+function AllChats({ show, setShow, message, setMessage, person, showPerson, userIds, setUserIds, allMessages, unseenMessages, setUnseenMessages }) {
   const [host, setHost] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [username, setUsername] = useState("");
@@ -113,6 +113,16 @@ function AllChats({ show, setShow, message, setMessage, showPerson, userIds, set
     performActionWhileTyping(newValue);
   };
 
+  function decryptmessage(encryptedMessage, userid) {
+    let decryptedMessage = '';
+    for (let i = 0; i < encryptedMessage.length; i++) {
+        // XOR each character of the encrypted message with the corresponding character from the userid
+        let charCode = encryptedMessage.charCodeAt(i) ^ userid.charCodeAt(i % userid.length);
+        decryptedMessage += String.fromCharCode(charCode);
+    }
+    return decryptedMessage;
+}
+
   const performActionWhileTyping = (value) => {
     if (value.trim() !== '') {
       axios
@@ -164,9 +174,9 @@ function AllChats({ show, setShow, message, setMessage, showPerson, userIds, set
 
         if (messagesOnLastDate && messagesOnLastDate.length > 0) {
           if (messagesOnLastDate[messagesOnLastDate.length - 1].senderId === host) {
-            return "sent : " + messagesOnLastDate[messagesOnLastDate.length - 1].message;
+            return "sent : " + decryptmessage(messagesOnLastDate[messagesOnLastDate.length - 1].message,host);
           } else {
-            return "received : " + messagesOnLastDate[messagesOnLastDate.length - 1].message;
+            return "received : " + decryptmessage(messagesOnLastDate[messagesOnLastDate.length - 1].message,person.id);
           }
         }
       }

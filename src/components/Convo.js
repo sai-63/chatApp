@@ -417,6 +417,21 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     }
   };
 
+  const displaymessage = (message) => {
+    const id = host===message.senderId ? host : message.receiverId;
+    return decryptmessage(message.message,id);
+  }
+
+  function decryptmessage(encryptedMessage, userid) {
+    let decryptedMessage = '';
+    for (let i = 0; i < encryptedMessage.length; i++) {
+        // XOR each character of the encrypted message with the corresponding character from the userid
+        let charCode = encryptedMessage.charCodeAt(i) ^ userid.charCodeAt(i % userid.length);
+        decryptedMessage += String.fromCharCode(charCode);
+    }
+    return decryptedMessage;
+}
+
   return (
     <div style={{ height: "82%", position: "relative" }}>
       <div
@@ -448,7 +463,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                       >
                         {repliedMessage ? (
                           <div className="bg-dark text-white p-1 rounded mb-1" onClick={() => scrollToMessage(repliedMessage.messageId)}>
-                            <p className="m-0">{repliedMessage.message}</p>
+                            <p className="m-0">{decryptmessage(repliedMessage.message,host)}</p>
                           </div>
                         ) : null}
 
@@ -459,7 +474,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                             style={{ position: "relative" }}
                           >
                             <p className="m-0 me-2" style={{ position: "relative" }}>
-                              {obj.message}
+                              {decryptmessage(obj.message,host)}
                             </p>
                             <div className="d-flex align-items-end ms-auto" style={{ position: "relative" }}>
                               <p className="m-0 mt-auto ms-auto p-0 d-inline" style={{ fontSize: "10px" }}>
@@ -556,13 +571,13 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                       >
                         {repliedMessage ? (
                           <div className="bg-dark text-white p-1 rounded mb-1" onClick={() => scrollToMessage(repliedMessage.messageId)}>
-                            <p className="m-0">{repliedMessage.message}</p>
+                            <p className="m-0">{decryptmessage(repliedMessage.message,person.id)}</p>
                           </div>
                         ) : null}
                         {obj.fileType === null ? (
                           <div className="d-flex flex-wrap ms-2 me-2 d-inline" style={{ position: "relative" }}>
                             <p className="m-0 me-2" style={{ position: "relative" }}>
-                              {obj.message}
+                              {decryptmessage(obj.message,person.id)}
                             </p>
                             <p className="m-0 mt-auto p-0 d-inline" style={{ fontSize: "10px" }}>
                               {getCurrentTime(obj.timestamp)}
@@ -663,7 +678,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
             <button onClick={closeFloatingCard} className="btn-close" />
           </div>
           <div className="mt-2">
-            {floatingCard.message}
+            {displaymessage(floatingCard)}
             <div className="text-end" style={{ fontSize: "10px" }}>
               {getCurrentTime(floatingCard.timestamp)}
             </div>
