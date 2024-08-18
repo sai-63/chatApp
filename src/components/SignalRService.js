@@ -9,6 +9,8 @@ class SignalRService {
     this.removeMessageCallback = null;
     this.removeGrpMessageCallback = null;
     this.editMessageCallback = null;
+    this.editGrpMessageCallback = null;
+    this.editProfileCallback=null;
     this.readMessageCallback = null;
     this.isConnected = false;
     this.isConnecting = false;
@@ -129,6 +131,19 @@ class SignalRService {
         this.editMessageCallback(messageId, newMessage, chatDate, senderName);
       }
     });
+
+    this.connection.on("GrpMessageEdited", (groupName,messageId, newMessage, chatDate) => {
+      if (this.editGrpMessageCallback) {
+        this.editGrpMessageCallback(groupName,messageId, newMessage, chatDate);
+      }
+    });
+
+    this.connection.on("UpdateNickname", (userName, newNickName) => {
+      console.log("Last second---",this.username,userName,newNickName)
+      if (this.editProfileCallback && userName!=this.username) {
+        this.editProfileCallback(userName, newNickName);
+      }
+    });    
 
     this.connection.on("MessageRead", (messageIds, senderName) => {
       if (this.readMessageCallback) {
@@ -282,6 +297,27 @@ class SignalRService {
     }
   }
 
+  editGroupMessage(groupName, messageId, newMessage, chatDate) {
+    this.ensureConnection();
+    if (this.connection) {
+      this.connection.invoke("EditGroupMessage", groupName, messageId, newMessage, chatDate)
+        .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+
+  editProfile(username,newNickName) {
+    this.ensureConnection();
+    if (this.connection) {
+      console.log("Have in sr---",username,newNickName)
+      this.connection.invoke("EditProfile", username,newNickName)
+        .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+
   readMessage(receiverId, messageIds, senderName) {
     this.ensureConnection();
     if (this.connection) {
@@ -340,6 +376,13 @@ class SignalRService {
 
   setEditMessageCallback(callback) {
     this.editMessageCallback = callback;
+  }
+
+  setEditGroupMessageCallback(callback) {
+    this.editGrpMessageCallback = callback;
+  }
+  setEditProfileCallback(callback){
+    this.editProfileCallback=callback;
   }
 
   setReadMessageCallback(callback) {

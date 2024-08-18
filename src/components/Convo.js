@@ -400,9 +400,26 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     });
 
 
-    // SignalRService.setEditGMessageCallback((messageId, newMessage, chatDate) => {
-    //   editGMessage(chatDate, messageId, newMessage);
-    // });
+    const editGroupMessage = (groupName,messageId, newMessage, chatDate) => {
+      const curgrp = grpperson.name===groupName ?grpperson.name : groupName;
+      setAllGMessages(allGMessages => {
+        const updatedMessages = { ...allGMessages[curgrp] };
+        if (updatedMessages[chatDate]) {
+          updatedMessages[chatDate] = updatedMessages[chatDate].map(message =>
+            message.idd === messageId ? { ...message, message: newMessage } : message
+          );
+        }
+        // Update allMessages with updated messages for the person
+        return {
+          ...allGMessages,
+          [curgrp]: updatedMessages
+        };
+      });
+    };
+
+    SignalRService.setEditGroupMessageCallback((groupName,messageId, newMessage, chatDate) => {
+      editGroupMessage(groupName,messageId, newMessage, chatDate);
+    });
   },[grpperson])
 
   useEffect(() => {
@@ -487,20 +504,39 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
   };
 
   function handleEdit() {
-    const chatDate = new Date(editObject.timestamp).toISOString().split('T')[0];
-    const msgId = editObject.messageId;
-    console.log("Edit Obj Msg Id : ", msgId);
-    console.log("New Message is : ", editMessage);
-    axios.post(`http://localhost:5290/Chat/EditMessage?messageId=${msgId}&newMessage=${editMessage}`)
-      .then((res) => {
-        console.log(res.data.message);
-      })
-      .catch((err) => {
-        console.log(err.message);
-      });
-    SignalRService.editMessage(person.id, msgId, editMessage, chatDate, username);
-    setShowModal(false);
-    setEditMessage('');
+    if(user.userType==='user'){
+      const chatDate = new Date(editObject.timestamp).toISOString().split('T')[0];
+      const msgId = editObject.messageId;
+      console.log("Edit Obj Msg Id : ", msgId);
+      console.log("New Message is : ", editMessage);
+      axios.post(`http://localhost:5290/Chat/EditMessage?messageId=${msgId}&newMessage=${editMessage}`)
+        .then((res) => {
+          console.log(res.data.message);
+        })
+        .catch((err) => {
+          console.log(err.message);
+        });
+      SignalRService.editMessage(person.id, msgId, editMessage, chatDate, username);
+      setShowModal(false);
+      setEditMessage('');
+    }else{
+      console.log("We have editObject in group as----",editObject)
+      const chatDate = new Date(editObject.timestamp).toISOString().split('T')[0];
+      const msgId = editObject.idd;
+      console.log("Edit Obj Group Msg Id : ", msgId);
+      console.log("New Message is : ", editMessage);
+      axios.post(`http://localhost:5290/Chat/EditGrpMessage?groupName=${grpperson.name}&messageId=${msgId}&newMessage=${editMessage}`)
+        .then((res) => {
+          console.log(res.data.message);
+        })
+        .catch((err) => {
+          console.log(err.message);
+        });
+      SignalRService.editGroupMessage(grpperson.name, msgId, editMessage, chatDate);
+      setShowModal(false);
+      setEditMessage('');
+    }
+    
   }
 
   function getCurrentTime(timestamp) {
@@ -1039,7 +1075,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
             }`}
         </Modal.Body>
         <Modal.Footer>
-          <input id="msg" type="text" value={editGMessage} onChange={(e) => setEditGMessage(e.target.value)} required />
+          <input id="msg" type="text" value={editMessage} onChange={(e) => setEditMessage(e.target.value)} required />
           <Button variant="success" onClick={handleEdit}>
             Edit
           </Button>

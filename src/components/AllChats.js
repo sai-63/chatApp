@@ -7,13 +7,15 @@ import SignalRService from "./SignalRService";
 import { UserContext } from './UserContext';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import {Button,Icons}from 'react-bootstrap';
-
+import EditProfile from './EditProfile.js';
 function AllChats({ show, setShow, message, setMessage, person,showPerson,grpperson,showGrpPerson, userIds, setUserIds, allMessages, 
                   unseenMessages, setUnseenMessages ,allGMessages,setAllGMessages,allGro,setAllGro,fulldet}) {
   const [host, setHost] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [username, setUsername] = useState("");
   const [inputValue, setInputValue] = useState('');
+
+  const [editingUser, setEditingUser] = useState('');
 
   //Handle user group click
   const { user, setUser } = useContext(UserContext);
@@ -26,8 +28,7 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
     const userId = localStorage.getItem("userId");
     const username = localStorage.getItem("username");
     setHost(userId);
-    setUsername(username);
-    console.log("he",userIds)
+    setUsername(username);    
   }, []);
 
   useEffect(()=>{
@@ -118,6 +119,41 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
 
   }, [allMessages]);
 
+  useEffect(() => {
+    SignalRService.setEditProfileCallback((username, newNickname) => {
+      console.log("Last step we havepppppp",username,newNickname)
+      setUserIds((userIds) => {
+        return userIds.map(user => {
+          if (user.username === username) {
+            return { ...user, nickname: newNickname };
+          }
+          return user;
+        });
+      });
+
+      //Api to update in database
+      axios
+        .get(`http://localhost:5290/Chat/EditProfile?username=${username}&newNickname=${newNickname}'`)
+        .then((res) => {
+          console.log("Updated profile in backend")
+        })
+        .catch((err) => console.log(err));
+
+
+    });
+  
+    // Other SignalRService callbacks
+  }, []);
+
+  
+  const handleNicknameSubmit = (nickname) => {
+    console.log("Received nickname:", username,nickname);
+    // Update the userIds state or make an API call to save the nickname
+    SignalRService.editProfile(username,nickname);
+    
+  };
+
+
   const handleInputChange = (event) => {
     const newValue = event.target.value;
     setInputValue(newValue);
@@ -207,66 +243,7 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
     return '';
   };
 
-  //GROUPS
-  // function createGroup() {
-  //   const groupName = prompt("Enter group name:");
-  //   axios
-  //     .get("http://localhost:5290/Chat/GetAllGroups")
-  //     .then((res) => {
-  //       const existingGroup = res.data.find((group) => group.name === groupName);
-  //       if (existingGroup) {
-  //         alert("Group name already exists. Please choose a different name.");
-  //       } else {
-  //         console.log("New group super");
-  //         axios
-  //         .post("http://localhost:5290/Chat/CreateGroup", {
-  //           name: groupName,
-  //           users: [username],
-  //           messages: [],
-  //         })
-  //         .then((res) => {
-  //           const newGroup={ id: res.data.id, name: groupName, users: [username], messages: []};
-  //           setUserGroups([
-  //             ...usergroups,newGroup]);
-  //             console.log('This is the group',usergroups);
-  //         console.log("Created Successfully")
-  //         })
-  //         .catch((err) => console.log(err));
-  //       }
-  //     })
-  //     .catch((e)=>console.log(e));      
-  // }
-
-  // //Join Group
-  // function joinGroup(){
-  //   const gname = prompt("Enter group name to joinnnnnn:");
-  //   console.log('grpname',gname,username);    
-  //   const data={username:username,groupname:gname}
-  //   axios
-  //     .get("http://localhost:5290/Chat/GetUserOfGroup",{params:{groupname:data.groupname}})
-  //     .then((res)=>{
-  //       setJuser(res.data)
-  //       console.log("In Getusersofgroup ",data.groupname,juser)
-  //     })
-  //   // axios
-  //   //   .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:data.groupname}})
-  //   //   .then((res)=>{
-  //   //     setJmsgs(res.data)
-  //   //     console.log("In Getgroupmessages ",data.groupname)
-  //   //   })
-  //   setJmsgs(allGMessages[data.groupname])
-  //   if(gname&&username){
-  //     axios
-  //       .post("http://localhost:5290/Chat/AddUsersToGroup", data)
-  //       .then((res) => {
-  //         console.log("User added to group",joingroup);
-          
-  //         const newjoining={id:res.data.id,name:gname,users:juser,messages:jmsgs}
-  //         setUserGroups([...usergroups,newjoining])
-  //       })
-  //       .catch((err) => console.log(err));
-  //   }
-  // }
+  
   function addurfrnd(group){
     const frndname = prompt("Enter frnd name :");
     console.log('grpname',group.name,frndname);    
@@ -371,7 +348,7 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
         </div>
         <CgProfile
           className="me-2 fs-4"
-          onClick={() => setShowModal(!showModal)}
+          onClick={() => setShowModal(!showModal)}          
           style={{ cursor: "pointer" }}
         />
       </div>
@@ -434,7 +411,7 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
         </div>
       )}
 
-      {/* <EditProfile show={showModal} setShow={setShowModal} /> */}
+      <EditProfile show={showModal} setShow={setShowModal} onSubmit={handleNicknameSubmit} />
     </div>
   );
 }
