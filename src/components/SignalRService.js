@@ -6,6 +6,9 @@ class SignalRService {
     this.connection = null;
     this.receiveMessageCallback = null;
     this.receiveGroupMessageCallback=null;
+    this.receiveCreateGroupMessageCallback=null;
+    this.addFriendToGroupMessageCallback=null;
+    this.add=null;
     this.removeMessageCallback = null;
     this.removeGrpMessageCallback = null;
     this.editMessageCallback = null;
@@ -113,7 +116,7 @@ class SignalRService {
         console.log("Received grp msg from backend",this.gn,grpname)
         this.receiveGroupMessageCallback(grpname,groupmsg);
       }      
-  });
+    });
 
     this.connection.on("MessageRemoved", (messageId, chatDate, senderName) => {
       if (this.removeMessageCallback) {
@@ -143,7 +146,29 @@ class SignalRService {
       if (this.editProfileCallback && userName!=this.username) {
         this.editProfileCallback(userName, newNickName);
       }
-    });    
+    });  
+
+    this.connection.on("RecCreateGroup", (user,newGroup,newPic) => {
+      if (this.receiveCreateGroupMessageCallback) {
+        console.log("Received Create group backend",user,newGroup,newPic)
+        this.receiveCreateGroupMessageCallback(newGroup,user,newPic);
+      }      
+    }); 
+
+    this.connection.on("AddFriend", (groupname,frnd,matter) => {
+      if (this.addFriendToGroupMessageCallback) {
+        console.log("Adding friend backend",groupname,frnd,matter)
+        this.addFriendToGroupMessageCallback(groupname,frnd,matter);
+      }      
+    });
+    
+    this.connection.on("AddFriends", (groupname,frnd,matter) => {
+      if (this.addFriendToGroupMessageCallback) {
+        console.log("Adding friend backend",groupname,frnd,matter)
+        this.addFriendToGroupMessageCallback(groupname,frnd,matter);
+      }      
+    });
+
 
     this.connection.on("MessageRead", (messageIds, senderName) => {
       if (this.readMessageCallback) {
@@ -318,6 +343,39 @@ class SignalRService {
     }
   }
 
+  createGrouppp(user,newgroup,newpic){
+    this.ensureConnection();
+    if (this.connection) {      
+      console.log("Groupooooooooooooo",user,newgroup,newpic)
+      this.connection.invoke("CreateGroup",user,newgroup,newpic)
+        .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+
+  addFriend(groupName,frnd,matter){
+    this.ensureConnection();
+    if (this.connection) {      
+      console.log("Addddd",groupName,frnd,matter)
+      this.connection.invoke("AddToGroup",groupName,frnd,matter)
+        .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+
+  addme(groupName){
+    this.ensureConnection();
+    if (this.connection) {      
+      console.log("addmee",groupName)
+      this.connection.invoke("AddMe",groupName)
+        .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
+
   readMessage(receiverId, messageIds, senderName) {
     this.ensureConnection();
     if (this.connection) {
@@ -365,6 +423,18 @@ class SignalRService {
   setReceiveGroupMessageCallback(callback) {
     this.receiveGroupMessageCallback = callback;
   }
+  
+  setCreateGroupMessageCallback(callback) {
+    this.receiveCreateGroupMessageCallback = callback;
+  }
+
+  setaddFriendToGroupMessageCallback(callback) {
+    this.addFriendToGroupMessageCallback = callback;
+  }
+
+  setAdd(callback){
+    this.add=callback;
+  }
 
   setRemoveMessageCallback(callback) {
     this.removeMessageCallback = callback;
@@ -381,6 +451,7 @@ class SignalRService {
   setEditGroupMessageCallback(callback) {
     this.editGrpMessageCallback = callback;
   }
+
   setEditProfileCallback(callback){
     this.editProfileCallback=callback;
   }

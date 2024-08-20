@@ -595,9 +595,9 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       >
         {user.userType==="user" ? (          
           <div className="mt-auto">
-          {/* {Object.keys(allMessages[person.username]).length !== 0 ? (
-          <div className="mt-auto"> */}
-            {Object.keys(allMessages[person.username]).map((date) => (
+          {Object.keys(allMessages[person.username]).length === 0 ? (
+              <p className="lead text-secondary m-auto">Chat is Empty</p>):
+            (Object.keys(allMessages[person.username]).map((date) => (
               <div key={date}>
                 <div className="text-center my-3">
                   <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
@@ -802,12 +802,14 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                   );
                 })}
               </div>
-            ))}
+            )))}
           </div>
         ) : (
           <div className="mt-auto">
-            {/* {Object.keys(allGMessages[grpperson.name]).map((dt) => ( */}
-            {Object.keys(allGMessages[grpperson.name]).map((dt) => (
+            {console.log("1111111111111111111111111111111111111111111111111111")}
+            {Object.keys(allGMessages[grpperson.name]).length === 0 ? (
+              <p className="lead text-secondary m-auto">Group Chat is Empty</p>):
+            (Object.keys(allGMessages[grpperson.name]).map((dt) => (
               <div key={dt}>
                 <div className="text-center my-3">
                   <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
@@ -985,7 +987,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                   )
                 )}
               </div>
-            ))}
+            )))}
           </div> 
           // <p className="lead text-secondary m-auto">Chat is Empty</p>
         )}

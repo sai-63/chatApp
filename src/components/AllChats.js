@@ -6,10 +6,10 @@ import { NavLink } from "react-router-dom";
 import SignalRService from "./SignalRService";
 import { UserContext } from './UserContext';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import {Button,Icons}from 'react-bootstrap';
+import {Button,Icons,Modal,Form}from 'react-bootstrap';
 import EditProfile from './EditProfile.js';
 function AllChats({ show, setShow, message, setMessage, person,showPerson,grpperson,showGrpPerson, userIds, setUserIds, allMessages, 
-                  unseenMessages, setUnseenMessages ,allGMessages,setAllGMessages,allGro,setAllGro,fulldet}) {
+                  unseenMessages, setUnseenMessages ,allGMessages,setAllGMessages,allGro,setAllGro,fulldet,setFullDet}) {
   const [host, setHost] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [username, setUsername] = useState("");
@@ -23,6 +23,10 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
   let [joingroup,setJoinGroup]=useState("");
   let [juser,setJuser]=useState([]);
   let [jmsgs,setJmsgs]=useState([]);  
+
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [createg, setCreateG] = useState(""); // State for group name
+  const [setpic, setPic] = useState("");
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
@@ -138,12 +142,41 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
           console.log("Updated profile in backend")
         })
         .catch((err) => console.log(err));
-
-
     });
-  
-    // Other SignalRService callbacks
-  }, []);
+
+    SignalRService.setCreateGroupMessageCallback( (groupName,users,picture) => {
+      console.log("At last for updating--",groupName,users,picture,localStorage.getItem("username"))
+      setAllGMessages( (allGMessages) =>{
+        const updatedMessages={...allGMessages};
+        if (!updatedMessages[groupName] && users.includes(localStorage.getItem("username"))) {
+          updatedMessages[groupName] = {};
+        }
+        console.log('New updated one--',updatedMessages,users,localStorage.getItem("username"))
+        return updatedMessages;
+      })
+    })
+
+    SignalRService.setaddFriendToGroupMessageCallback( (groupName,frnd,matter) => {
+      SignalRService.addme(groupName)
+      console.log("At last for updating--",groupName,frnd,localStorage.getItem("username"))
+      var biod=axios.get(`http://localhost:5290/Chat/FullDetOfGroup?groupname=${groupName}`)
+      setFullDet((prev)=>{
+        const temp={...prev};
+        if(localStorage.getItem("username")===frnd){
+          return{...temp,[groupName]:biod.data}
+        }
+        return temp;
+      })
+      setAllGMessages( (allGMessages) =>{
+        const updatedMessages={...allGMessages};
+        if (!updatedMessages[groupName] && localStorage.getItem("username")===frnd) {
+          updatedMessages[groupName] = matter;
+        }
+        console.log('New updated one--',updatedMessages,matter,localStorage.getItem("username"))
+        return updatedMessages;
+      })
+    })
+  }, [allGMessages]);
 
   
   const handleNicknameSubmit = (nickname) => {
@@ -153,6 +186,10 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
     
   };
 
+
+  const handleShowGroupModal=()=> setShowGroupModal(true);
+  const handleCloseGroupModal=()=>setShowGroupModal(false);
+  const handleGroupSubmit=()=>setShowGroupModal(false);
 
   const handleInputChange = (event) => {
     const newValue = event.target.value;
@@ -201,20 +238,20 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
   //Group CHat
   const groupChat=(gobj)=>{
     setUser({ ...user, userType: "group" });
-    console.log("Have------",user)
+    console.log("Have------",user,gobj,fulldet)
     localStorage.setItem("gname",gobj.name)
     console.log("Bro u clicked group",localStorage.getItem("gname"))
     console.log("We got on clicking grp is ",gobj,gobj.id)    
     localStorage.setItem("receiver",gobj.id)
-    showGrpPerson(gobj)
+    showGrpPerson(gobj)    
     console.log("set gmsg at allchats ",gobj.messages)
     axios
       .get("http://localhost:5290/Chat/Getgroupid",{params:{gname:gobj.name}})
       .then((res)=>{
         console.log("Hooray",res.data);        
         localStorage.setItem("groupid",res.data);
-      }
-    )    
+      })     
+    SignalRService.addme(gobj.name)
   }
 
   const handleShow = () => {
@@ -246,89 +283,95 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
   
   function addurfrnd(group){
     const frndname = prompt("Enter frnd name :");
-    console.log('grpname',group.name,frndname);    
+    console.log('groupname:',group.name,'Friendname:',frndname);    
     const fdata={username:frndname,groupname:group.name}
-    axios
-      .get("http://localhost:5290/Chat/GetUserOfGroup",{params:{groupname:fdata.groupname}})
-      .then((res)=>{
-        setJuser(res.data)
-        console.log("In Getusersofgroup ",fdata.groupname,juser)
-    })
     // axios
-    //   .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:fdata.groupname}})
+    //   .get("http://localhost:5290/Chat/GetUserOfGroup",{params:{groupname:fdata.groupname}})
     //   .then((res)=>{
-    //     setJmsgs(res.data)
-    //     console.log("In Getgroupmessages ",fdata.messages)
+    //     setJuser(res.data)
+    //     console.log("In Getusersofgroup ",fdata.groupname,juser)
     // })
     setJmsgs(allGMessages[fdata.groupname])
     axios
-      .post("http://localhost:5290/Chat/AddUsersToGroup", fdata)
+      .post(`http://localhost:5290/Chat/AddUsersToGroup?groupname=${group.name}&frnd=${frndname}`)
       .then((res) => {
-        console.log("User added to group",joingroup);
-        const fnewjoining={id:res.data.id,name:fdata.name,users:juser,messages:jmsgs}
-        setUserGroups([...usergroups,fnewjoining])
+        console.log("Adding user to group",group.name,frndname);
       })
       .catch((err) => console.log(err));    
+    SignalRService.addFriend(group.name,frndname,allGMessages[group.name])
   }
-  function createGroup() {
-    const groupName = prompt("Enter group name:");
+  
+  function grandomid() {
+    // Generate a random UUID
+    return [...Array(24)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+  } 
+
+  function createGroup() {    
     axios
-      .get("http://localhost:5290/Chat/GetAllGroups")
+      .get(`http://localhost:5290/Chat/GetAllGrps?username=${username}`)
       .then((res) => {
-        const existingGroup = res.data.find((group) => group.name === groupName);
+        const existingGroup = res.data.find((group) => group.name === createg);
         if (existingGroup) {
           alert("Group name already exists. Please choose a different name.");
-        } else {
-          console.log("New group super");
+        } else {          
+          const gwhat=grandomid();
+          console.log("New group super",gwhat,createg,username,setpic,fulldet);
+          let ggg={id:gwhat,name:createg,users:[username],messages:[],picUrl:setpic}
+          setFullDet((prev)=>{
+            return{...prev,[createg]:ggg}
+          })
           axios
-          .post("http://localhost:5290/Chat/CreateGroup", {
-            name: groupName,
-            users: [username],
-            messages: [],
-          })
+          .post("http://localhost:5290/Chat/CreateGroup",ggg,{headers: {'Content-Type': 'application/json'}})
           .then((res) => {
-            const newGroup={ id: res.data.id, name: groupName, users: [username], messages: []};
-            setUserGroups([
-              ...usergroups,newGroup]);
-              console.log('This is the group',usergroups);
-          console.log("Created Successfully")
+            console.log("Hey",ggg)
+            setUserGroups([...usergroups,ggg]);          
+            console.log('This is the group',usergroups);
+            console.log("Created Successfully")            
           })
-          .catch((err) => console.log(err));
+          .catch((error) => 
+            console.error('Error:', error.response ? error.response.data : error.message)
+          );          
         }
       })
-      .catch((e)=>console.log(e));      
+      .catch((e)=>console.log(e)); 
+
+      console.log("First ma ",username,createg,setpic);
+      SignalRService.createGrouppp(username,createg,setpic);
+      setCreateG('');
+      setPic('');
+      handleCloseGroupModal();
   }
 
   //Join Group
-  function joinGroup(){
-    const gname = prompt("Enter group name to joinnnnnn:");
-    console.log('grpname',gname,username);    
-    const data={username:username,groupname:gname}
-    axios
-      .get("http://localhost:5290/Chat/GetUserOfGroup",{params:{groupname:data.groupname}})
-      .then((res)=>{
-        setJuser(res.data)
-        console.log("In Getusersofgroup ",data.groupname,juser)
-      })
-    // axios
-    //   .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:data.groupname}})
-    //   .then((res)=>{
-    //     setJmsgs(res.data)
-    //     console.log("In Getgroupmessages ",data.groupname)
-    //   })
-    setJmsgs(allGMessages[data.groupname])
-    if(gname&&username){
-      axios
-        .post("http://localhost:5290/Chat/AddUsersToGroup", data)
-        .then((res) => {
-          console.log("User added to group",joingroup);
+  // function joinGroup(){
+  //   const gname = prompt("Enter group name to joinnnnnn:");
+  //   console.log('grpname',gname,username);    
+  //   const data={username:username,groupname:gname}
+  //   // axios
+  //   //   .get("http://localhost:5290/Chat/GetUserOfGroup",{params:{groupname:data.groupname}})
+  //   //   .then((res)=>{
+  //   //     setJuser(res.data)
+  //   //     console.log("In Getusersofgroup ",data.groupname,juser)
+  //   //   })
+  //   // axios
+  //   //   .get("http://localhost:5290/Chat/GetGroupMessages",{params:{groupname:data.groupname}})
+  //   //   .then((res)=>{
+  //   //     setJmsgs(res.data)
+  //   //     console.log("In Getgroupmessages ",data.groupname)
+  //   //   })
+  //   setJmsgs(allGMessages[data.groupname])
+  //   if(gname&&username){
+  //     axios
+  //       .post("http://localhost:5290/Chat/AddUsersToGroup", data)
+  //       .then((res) => {
+  //         console.log("User added to group",joingroup);
           
-          const newjoining={id:res.data.id,name:gname,users:juser,messages:jmsgs}
-          setUserGroups([...usergroups,newjoining])
-        })
-        .catch((err) => console.log(err));
-    }
-  }
+  //         const newjoining={id:res.data.id,name:gname,users:juser,messages:jmsgs}
+  //         setUserGroups([...usergroups,newjoining])
+  //       })
+  //       .catch((err) => console.log(err));
+  //   }
+  // }
 
   return (
     <div className="chats overflow-auto" style={{ maxHeight: "100%" }}>
@@ -355,12 +398,12 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
       <hr />
       <div className="button-container mt-auto">
         <div className="d-flex justify-content-between align-items-center m-3">
-          <Button className="btn me-3" onClick={createGroup}>
+          <Button className="btn me-3" onClick={handleShowGroupModal}>
             Create<i class="bi bi-collection"></i>
           </Button>
-          <Button className="btn me-3" onClick={joinGroup}>
+          {/* <Button className="btn me-3" onClick={joinGroup}>
             Join<i class="bi bi-collection-fill"></i>
-          </Button>
+          </Button> */}
         </div>
       </div>
       <p className="lead ms-2">Your Chats</p>
@@ -411,7 +454,29 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
         </div>
       )}
 
+      <Modal show={showGroupModal} onHide={handleCloseGroupModal} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Create a New Group</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group controlId="createg">
+              <Form.Label>Group Name</Form.Label>
+              <Form.Control type="text" placeholder="Enter group name" value={createg} onChange={(e) => setCreateG(e.target.value)} />
+            </Form.Group>
+            <Form.Group controlId="setpic">
+              <Form.Label>Picture URL</Form.Label>
+              <Form.Control type="text" placeholder="Enter picture URL" value={setpic} onChange={(e) => setPic(e.target.value)} />
+            </Form.Group>
+            <Button variant="primary" onClick={createGroup}>Create Group</Button>
+            <Button variant="primary" onClick={handleCloseGroupModal}>Cancel</Button>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
       <EditProfile show={showModal} setShow={setShowModal} onSubmit={handleNicknameSubmit} />
+
+      
     </div>
   );
 }

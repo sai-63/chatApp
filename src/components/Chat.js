@@ -187,7 +187,8 @@ function Chat() {
           setAllMessages={setAllMessages}
           allGMessages={allGMessages}
           setAllGMessages={setAllGMessages}
-          fulldet={fulldet}                 
+          fulldet={fulldet} 
+          setFullDet={setFullDet}                
           unseenMessages={unseenMessages}
           setUnseenMessages={setUnseenMessages}
           allGro={allGro}
