@@ -40,6 +40,16 @@ function Footer({ person, grpperson,messageObj, setMessageObj, prevMessages, set
     });
   } 
 
+  function encrypt(message, userid) {
+    let encryptedMessage = '';
+    for (let i = 0; i < message.length; i++) {
+        // XOR each character of the message with a character from the userid
+        let charCode = message.charCodeAt(i) ^ userid.charCodeAt(i % userid.length);
+        encryptedMessage += String.fromCharCode(charCode);
+    }
+    return encryptedMessage;
+  }
+
     async function submitMessage() {
       if (user.userType=="user") {
         setSpin(true);
@@ -48,9 +58,11 @@ function Footer({ person, grpperson,messageObj, setMessageObj, prevMessages, set
         const messageId = generateUUID();
         const timestamp = new Date().toISOString();
         const formData = new FormData();
+        const encryptmsg=encrypt(value,host);
         formData.append('SenderId', host);
         formData.append('ReceiverId', person.id);
-        formData.append('Message', value);
+        // formData.append('Message', value);
+        formData.append('Message', encryptmsg);
         formData.append('MessageId', messageId);
         formData.append('Timestamp', timestamp);
         formData.append('ReplyToMessageId', replyToMessageId);
@@ -58,7 +70,8 @@ function Footer({ person, grpperson,messageObj, setMessageObj, prevMessages, set
           messageId: messageId,
           senderId: host,
           receiverId: person.id,
-          message: value,
+          // message: value,
+          message: encryptmsg,
           isRead: false,
           senderRemoved: false, 
           timestamp: timestamp,

@@ -82,7 +82,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       SignalRService.sortChats(host,null,deleteObject.timestamp);
     }else{
       const chatDate = new Date(deleteObject.timestamp).toISOString().split('T')[0];
-      const msgId = deleteObject.idd;
+      const msgId = deleteObject.id;
       axios
         .post(
           `http://localhost:5290/Chat/DeleteGrpMessageForAll?groupname=${grpperson.name}&messageId=${msgId}`
@@ -131,30 +131,13 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       });
       SignalRService.sortChats(host,null,deleteObject.timestamp);
     }else{
+      console.log("We get------------",deleteObject)
       const chatDate = new Date(deleteObject.timestamp).toISOString().split('T')[0];
-      const msgId = deleteObject.idd;
+      const msgId = deleteObject.id;
+      const sender=deleteObject.senderId;
 
-      setAllGMessages(allGMessages => {
-        const updatedMessages = { ...allGMessages[grpperson.name] };  
-        if (updatedMessages[chatDate]) {
-          updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => 
-          {
-            if(message.idd === msgId){
-              message.DeletedBy=true;
-              return false;
-            }
-            return true;
-          });
-          if (updatedMessages[chatDate].length === 0) {
-            delete updatedMessages[chatDate];
-          }
-        }
-  
-        return {
-          ...allGMessages,
-          [grpperson.name]: updatedMessages
-        };
-      });
+      SignalRService.removeGrpMessageMe(grpperson.name, msgId, chatDate,sender);
+
       axios      
       .post(
         `http://localhost:5290/Chat/DeleteGrpForme?groupname=${grpperson.name}&messageId=${msgId}`
@@ -204,6 +187,41 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     // handleReceivedDeleteClose();
   };
 
+  function handleEdit() {
+    if(user.userType==='user'){
+      const chatDate = new Date(editObject.timestamp).toISOString().split('T')[0];
+      const msgId = editObject.messageId;
+      console.log("Edit Obj Msg Id : ", msgId);
+      console.log("New Message is : ", editMessage);
+      axios.post(`http://localhost:5290/Chat/EditMessage?messageId=${msgId}&newMessage=${editMessage}`)
+        .then((res) => {
+          console.log(res.data.message);
+        })
+        .catch((err) => {
+          console.log(err.message);
+        });
+      SignalRService.editMessage(person.id, msgId, editMessage, chatDate, username);
+      setShowModal(false);
+      setEditMessage('');
+    }else{
+      console.log("We have editObject in group as----",editObject)
+      const chatDate = new Date(editObject.timestamp).toISOString().split('T')[0];
+      const msgId = editObject.id;
+      console.log("Edit Obj Group Msg Id : ", msgId);
+      console.log("New Message is : ", editMessage);
+      axios.post(`http://localhost:5290/Chat/EditGrpMessage?groupName=${grpperson.name}&messageId=${msgId}&newMessage=${editMessage}`)
+        .then((res) => {
+          console.log(res.data.message);
+        })
+        .catch((err) => {
+          console.log(err.message);
+        });
+      SignalRService.editGroupMessage(grpperson.name, msgId, editMessage, chatDate);
+      setShowModal(false);
+      setEditMessage('');
+    }    
+  }
+
   function scrollDown() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -229,6 +247,16 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
+  }
+
+  function decryptmessage(encryptedMessage, userid) {
+    let decryptedMessage = '';
+    for (let i = 0; i < encryptedMessage.length; i++) {
+        // XOR each character of the encrypted message with the corresponding character from the userid
+        let charCode = encryptedMessage.charCodeAt(i) ^ userid.charCodeAt(i % userid.length);
+        decryptedMessage += String.fromCharCode(charCode);
+    }
+    return decryptedMessage;
   }
 
   //Handle user group chats
@@ -382,7 +410,32 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       setAllGMessages(allGMessages => {
         const updatedMessages = { ...allGMessages[curgrp] };
         if (updatedMessages[chatDate]) {
-          updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.idd !== messageId);
+          console.log(updatedMessages[chatDate],messageId,'HHHHHHHHHHHHHHH')
+          updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => message.id !== messageId);
+          if (updatedMessages[chatDate].length === 0) {
+            delete updatedMessages[chatDate];
+          }
+        }
+        return {
+          ...allGMessages,
+          [curgrp]: updatedMessages
+        };
+      });
+    };
+    
+
+
+    SignalRService.setGrpRemoveMessageCallback((groupName,messageId, chatDate) => {
+      removeGrpMessage(groupName,messageId, chatDate);
+    });
+
+    const removeGrpMessageForMe= (groupName,messageId, chatDate,sender) => {
+      const curgrp = grpperson.name===groupName ?grpperson.name : groupName;
+      setAllGMessages(allGMessages => {
+        const updatedMessages = { ...allGMessages[curgrp] };
+        if (updatedMessages[chatDate]) {
+          console.log(updatedMessages[chatDate],messageId,'HHHHHHHHHHHHHHH')
+          updatedMessages[chatDate] = updatedMessages[chatDate].filter(message => !(message.id === messageId && sender==host));
           if (updatedMessages[chatDate].length === 0) {
             delete updatedMessages[chatDate];
           }
@@ -394,9 +447,8 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
       });
     };
 
-
-    SignalRService.setGrpRemoveMessageCallback((groupName,messageId, chatDate) => {
-      removeGrpMessage(groupName,messageId, chatDate);
+    SignalRService.setGrpRemoveMessageForMeCallback((groupName,messageId, chatDate,sender) => {
+      removeGrpMessageForMe(groupName,messageId, chatDate,sender);
     });
 
 
@@ -406,7 +458,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
         const updatedMessages = { ...allGMessages[curgrp] };
         if (updatedMessages[chatDate]) {
           updatedMessages[chatDate] = updatedMessages[chatDate].map(message =>
-            message.idd === messageId ? { ...message, message: newMessage } : message
+            message.id === messageId ? { ...message, message: newMessage } : message
           );
         }
         // Update allMessages with updated messages for the person
@@ -503,41 +555,6 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
     return milliseconds;
   };
 
-  function handleEdit() {
-    if(user.userType==='user'){
-      const chatDate = new Date(editObject.timestamp).toISOString().split('T')[0];
-      const msgId = editObject.messageId;
-      console.log("Edit Obj Msg Id : ", msgId);
-      console.log("New Message is : ", editMessage);
-      axios.post(`http://localhost:5290/Chat/EditMessage?messageId=${msgId}&newMessage=${editMessage}`)
-        .then((res) => {
-          console.log(res.data.message);
-        })
-        .catch((err) => {
-          console.log(err.message);
-        });
-      SignalRService.editMessage(person.id, msgId, editMessage, chatDate, username);
-      setShowModal(false);
-      setEditMessage('');
-    }else{
-      console.log("We have editObject in group as----",editObject)
-      const chatDate = new Date(editObject.timestamp).toISOString().split('T')[0];
-      const msgId = editObject.idd;
-      console.log("Edit Obj Group Msg Id : ", msgId);
-      console.log("New Message is : ", editMessage);
-      axios.post(`http://localhost:5290/Chat/EditGrpMessage?groupName=${grpperson.name}&messageId=${msgId}&newMessage=${editMessage}`)
-        .then((res) => {
-          console.log(res.data.message);
-        })
-        .catch((err) => {
-          console.log(err.message);
-        });
-      SignalRService.editGroupMessage(grpperson.name, msgId, editMessage, chatDate);
-      setShowModal(false);
-      setEditMessage('');
-    }
-    
-  }
 
   function getCurrentTime(timestamp) {
     let currentDate = new Date(timestamp);
@@ -600,8 +617,10 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
             (Object.keys(allMessages[person.username]).map((date) => (
               <div key={date}>
                 <div className="text-center my-3">
-                  <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
-                    {getDay(date)}
+                  <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white" 
+                  style={{fontSize:'80px',width:'150px',wordBreak:'break-word',display:'flex',alignItems:'center',justifyContent:'center',
+                  }}>
+                    <p style={{fontSize:'20px',margin:0}}>{getDay(date)}</p>
                   </div>
                 </div>
                 {allMessages[person.username][date].map((obj, index) => {
@@ -612,7 +631,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                       key={index}
                       ref={(el) => (messageRefs.current[obj.messageId] = el)}
                       className="ms-auto pe-3 mb-1 d-flex"
-                      style={{ width: "60%", wordBreak: "break-word" }}
+                      style={{fontSize:"80px", width: "60%", wordBreak: "break-word" }}
                     >
                       <div
                         className="d-inline-block ms-auto fs-6 lead m-0 bg-success pt-1 pb-1 rounded text-white"
@@ -620,7 +639,8 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                       >
                         {repliedMessage ? (
                           <div className="bg-dark text-white p-1 rounded mb-1" onClick={() => scrollToMessage(repliedMessage.messageId)}>
-                            <p className="m-0">{repliedMessage.message}</p>
+                            <p className="m-0">{decryptmessage(repliedMessage.message,host)}</p>
+                            {/* <p className="m-0">{repliedMessage.message}</p> */}
                           </div>
                         ) : null}
 
@@ -630,11 +650,12 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                             id={index}
                             style={{ position: "relative" }}
                           >
-                            <p className="m-0 me-2" style={{ position: "relative" }}>
-                              {obj.message}
+                            <p className="m-0 me-2" style={{ fontSize:'40px',position: "relative" }}>
+                              {decryptmessage(obj.message,host)}
+                              {/* {obj.message} */}
                             </p>
                             <div className="d-flex align-items-end ms-auto" style={{ position: "relative" }}>
-                              <p className="m-0 mt-auto ms-auto p-0 d-inline" style={{ fontSize: "10px" }}>
+                              <p className="m-0 mt-auto ms-auto p-0 d-inline" style={{ fontSize: "15px" }}>
                                 {getCurrentTime(obj.timestamp)}
                               </p>
                               <FontAwesomeIcon
@@ -720,7 +741,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                       key={index}
                       ref={(el) => (messageRefs.current[obj.messageId] = el)}
                       className="ps-2 mb-1"
-                      style={{ width: "60%", wordBreak: "break-word" }}
+                      style={{ fontSize:"80px",width: "60%", wordBreak: "break-word" }}
                     >
                       <div
                         className="lead m-0 fs-6 d-inline-block text-white bg-secondary p-3 pt-1 pb-1 rounded"
@@ -728,15 +749,17 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                       >
                         {repliedMessage ? (
                           <div className="bg-dark text-white p-1 rounded mb-1" onClick={() => scrollToMessage(repliedMessage.messageId)}>
-                            <p className="m-0">{repliedMessage.message}</p>
+                            <p className="m-0">{decryptmessage(repliedMessage.message,person.id)}</p>
+                            {/* <p className="m-0">{repliedMessage.message}</p> */}
                           </div>
                         ) : null}
                         {obj.fileType === null ? (
                           <div className="d-flex flex-wrap ms-2 me-2 d-inline" style={{ position: "relative" }}>
-                            <p className="m-0 me-2" style={{ position: "relative" }}>
-                              {obj.message}
+                            <p className="m-0 me-2" style={{fontSize:'40px',position: "relative" }}>
+                              {decryptmessage(obj.message,person.id)}
+                              {/* {obj.message} */}
                             </p>
-                            <p className="m-0 mt-auto p-0 d-inline" style={{ fontSize: "10px" }}>
+                            <p className="m-0 mt-auto p-0 d-inline" style={{ fontSize: "15px" }}>
                               {getCurrentTime(obj.timestamp)}
                             </p>
                           </div>
@@ -777,8 +800,15 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                               ) : null}
                               <p className="ms-1">{obj.fileName}</p>
                             </div>
-                            <div className="mt-auto d-inline" style={{ fontSize: "10px", width: "50px" }}>
-                              {getCurrentTime(obj.timestamp)}
+                            <div className="d-flex align-items-end ms-auto" style={{ position: "relative" }}>
+                              <p className="m-0 mt-auto ms-auto p-0 d-inline" style={{ fontSize: "15px" }}>
+                                {getCurrentTime(obj.timestamp)}
+                              </p>
+                              <FontAwesomeIcon
+                                icon={faCheckDouble}
+                                className="ms-1"
+                                style={{ fontSize: "10px", color: obj.isRead ? "blue" : "white" }}
+                              />
                             </div>
                           </div>
                         )}
@@ -806,14 +836,15 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
           </div>
         ) : (
           <div className="mt-auto">
-            {console.log("1111111111111111111111111111111111111111111111111111")}
+            {console.log("1111111111111111111111111111111111111111111111111111",allGMessages)}
             {Object.keys(allGMessages[grpperson.name]).length === 0 ? (
               <p className="lead text-secondary m-auto">Group Chat is Empty</p>):
             (Object.keys(allGMessages[grpperson.name]).map((dt) => (
               <div key={dt}>
                 <div className="text-center my-3">
-                  <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white">
-                    {getDay(dt)}
+                  <div className="d-inline-block fs-6 lead m-0 bg-success p-1 rounded text-white"
+                    style={{fontSize:'80px',width:'150px',wordBreak:'break-word',display:'flex',alignItems:'center',justifyContent:'center',}}>
+                    <p style={{fontSize:'20px',margin:0}}>{getDay(dt)}</p>
                   </div>
                 </div>
                 {allGMessages[grpperson.name][dt].map((obj, index) =>    
@@ -833,14 +864,14 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                             id={index}
                             style={{ position: "relative" }}
                           >                                                        
-                            <p className="m-0 me-2" style={{ position: "relative", fontSize: "12px" }}>
+                            <p className="m-0 me-2" style={{ position: "relative", fontSize: "20px" }}>
                               {un[obj.senderId]}
                             </p>
-                            <p className="m-0 me-2" style={{ position: "relative" }}>
+                            <p className="m-0 me-2" style={{fontSize:"40px", position: "relative" }}>
                               {obj.message}
                             </p>
                             <div className="d-flex align-items-end ms-auto" style={{ position: "relative" }}>
-                              <p className="m-0 mt-auto ms-auto p-0 d-inline" style={{ fontSize: "10px" }}>
+                              <p className="m-0 mt-auto ms-auto p-0 d-inline" style={{ fontSize: "15px" }}>
                                 {getCurrentTime(obj.timestamp)}
                               </p>                     
                               <FontAwesomeIcon
@@ -918,7 +949,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                         </div>
                       </div>
                     </div>
-                  ) : (
+                  ) : (obj.SenderId !== host && !obj.deletedBy ?(
                     <div
                       key={index}
                       className="ps-2 mb-1"
@@ -930,15 +961,22 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                       >
                         {obj.fileType === null ? (
                           <div className="d-flex flex-wrap ms-2 me-2 d-inline" style={{ position: "relative" }}>
-                            <p className="m-0 me-2" style={{ position: "relative", fontSize: "12px" }}>
+                            <p className="m-0 me-2" style={{ position: "relative", fontSize: "20px" }}>
                               {un[obj.senderId]}
                             </p>
-                            <p className="m-0 me-2" style={{ position: "relative" }}>
+                            <p className="m-0 me-2" style={{fontSize:"40px", position: "relative" }}>
                               {obj.message}
                             </p>
-                            <p className="m-0 mt-auto p-0 d-inline" style={{ fontSize: "10px" }}>
-                              {getCurrentTime(obj.timestamp)}
-                            </p>
+                            <div className="d-flex align-items-end ms-auto" style={{ position: "relative" }}>
+                              <p className="m-0 mt-auto ms-auto p-0 d-inline" style={{ fontSize: "15px" }}>
+                                {getCurrentTime(obj.timestamp)}
+                              </p>                     
+                              <FontAwesomeIcon
+                                icon={faCheckDouble}
+                                className="ms-1"
+                                style={{ fontSize: "10px", color: obj.isRead ? "blue" : "white" }}
+                              />
+                            </div> 
                           </div>                          
                         ) : (
                           <div className="d-flex ms-1 me-1" style={{ position: "relative" }}>
@@ -984,7 +1022,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
                         )}
                       </div>
                     </div>
-                  )
+                  ):null)
                 )}
               </div>
             )))}

@@ -11,6 +11,7 @@ class SignalRService {
     this.add=null;
     this.removeMessageCallback = null;
     this.removeGrpMessageCallback = null;
+    this.removeGrpMessageForMeCallback = null;
     this.editMessageCallback = null;
     this.editGrpMessageCallback = null;
     this.editProfileCallback=null;
@@ -113,7 +114,7 @@ class SignalRService {
     });
     this.connection.on("ReceiveGrpMessage", (user,grpname,groupmsg) => {
       if (this.receiveGroupMessageCallback) {
-        console.log("Received grp msg from backend",this.gn,grpname)
+        console.log("Received grp msg from backend",this.gn,grpname,groupmsg)
         this.receiveGroupMessageCallback(grpname,groupmsg);
       }      
     });
@@ -129,6 +130,12 @@ class SignalRService {
       }
     });    
 
+    this.connection.on("GrpMessageRemovedForMe", (groupName,messageId, chatDate,sender) => {
+      if (this.removeGrpMessageForMeCallback) {
+        this.removeGrpMessageForMeCallback(groupName,messageId, chatDate,sender);
+      }
+    }); 
+
     this.connection.on("MessageEdited", (messageId, newMessage, chatDate, senderName) => {
       if (this.editMessageCallback) {
         this.editMessageCallback(messageId, newMessage, chatDate, senderName);
@@ -141,10 +148,10 @@ class SignalRService {
       }
     });
 
-    this.connection.on("UpdateNickname", (userName, newNickName) => {
+    this.connection.on("UpdateNickname", (userName, newNickName,userId) => {
       console.log("Last second---",this.username,userName,newNickName)
-      if (this.editProfileCallback && userName!=this.username) {
-        this.editProfileCallback(userName, newNickName);
+      if (this.editProfileCallback){
+        this.editProfileCallback(userName, newNickName,userId);
       }
     });  
 
@@ -268,6 +275,7 @@ class SignalRService {
   sendMessage(user, data, receiverId = null,sendername, receivername) {
     this.ensureConnection();
     if (this.connection) {
+      console.log("Errrrorooooooor is ",data)
       if (receiverId) {
         console.log("Sending to the user ::::::::::::::: "+" "+receiverId+" "+receivername)
         this.connection.invoke("SendToUser", this.userId, receiverId, sendername, data)
@@ -311,6 +319,15 @@ class SignalRService {
       console.error("SignalR connection is not established.");
     }
   }
+  removeGrpMessageMe(grpName,id,chatDate,sender) {
+    this.ensureConnection();
+    if (this.connection) {
+      this.connection.invoke("RemoveGrpMessageForMe",grpName,id,chatDate,sender)
+        .catch(err => console.error(err.toString()));
+    } else {
+      console.error("SignalR connection is not established.");
+    }
+  }
 
   editMessage(receiverId, messageId, newMessage, chatDate, senderName) {
     this.ensureConnection();
@@ -332,11 +349,11 @@ class SignalRService {
     }
   }
 
-  editProfile(username,newNickName) {
+  editProfile(username,newNickName,userId) {
     this.ensureConnection();
     if (this.connection) {
       console.log("Have in sr---",username,newNickName)
-      this.connection.invoke("EditProfile", username,newNickName)
+      this.connection.invoke("EditProfile", username,newNickName,userId)
         .catch(err => console.error(err.toString()));
     } else {
       console.error("SignalR connection is not established.");
@@ -354,10 +371,13 @@ class SignalRService {
     }
   }
 
-  addFriend(groupName,frnd,matter){
+  async addFriend(groupName,frnd,matter,allusers){
     this.ensureConnection();
     if (this.connection) {      
       console.log("Addddd",groupName,frnd,matter)
+      for(const i of allusers){
+        await this.connection.invoke("AddMe",groupName)
+      }
       this.connection.invoke("AddToGroup",groupName,frnd,matter)
         .catch(err => console.error(err.toString()));
     } else {
@@ -442,6 +462,10 @@ class SignalRService {
 
   setGrpRemoveMessageCallback(callback) {
     this.removeGrpMessageCallback = callback;
+  }
+
+  setGrpRemoveMessageForMeCallback(callback) {
+    this.removeGrpMessageForMeCallback = callback;
   }
 
   setEditMessageCallback(callback) {

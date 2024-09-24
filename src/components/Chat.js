@@ -26,6 +26,9 @@ function Chat() {
   const [fulldet,setFullDet]=useState({})
   const [allGro,setAllGro]=useState([]);
 
+  //Profile Nickname
+  const [profilenickname,setProfileNickName]=useState({username:'',nickname:''});
+
   useEffect(()=>{
     if(host===null){
       navigate("/login");
@@ -193,6 +196,10 @@ function Chat() {
           setUnseenMessages={setUnseenMessages}
           allGro={allGro}
           setAllGro={setAllGro}
+          un={un}
+          setUN={setUN}
+          // profilenickname={profilenickname}
+          // setProfileNickName={setProfileNickName}
         />
       </div>
 

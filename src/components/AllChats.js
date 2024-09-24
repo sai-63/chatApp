@@ -8,13 +8,36 @@ import { UserContext } from './UserContext';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import {Button,Icons,Modal,Form}from 'react-bootstrap';
 import EditProfile from './EditProfile.js';
+
 function AllChats({ show, setShow, message, setMessage, person,showPerson,grpperson,showGrpPerson, userIds, setUserIds, allMessages, 
-                  unseenMessages, setUnseenMessages ,allGMessages,setAllGMessages,allGro,setAllGro,fulldet,setFullDet}) {
-  const [host, setHost] = useState("");
-  const [showModal, setShowModal] = useState(false);
+                  unseenMessages, setUnseenMessages ,allGMessages,setAllGMessages,allGro,setAllGro,fulldet,setFullDet
+                ,profilenickname,setProfileNickName,un,setUN}) {
+  const [host, setHost] = useState("");  
   const [username, setUsername] = useState("");
   const [inputValue, setInputValue] = useState('');
 
+  //Selected Chat color
+  const [activeChatId, setActiveChatId] = useState(null);
+  const activeChatStyle = {
+    backgroundColor: '#007bff', // Highlight background
+    color: 'white', // Text color for active chat
+    padding: '10px',
+    borderRadius: '5px',
+  };
+
+  const inactiveChatStyle = {
+    backgroundColor: 'transparent',
+    color: '#000', // Default text color for inactive chat
+    padding: '10px',
+  };
+
+  //Profile Nickname Updation
+  const [showoverlay, setShowOverlay] = useState(false);
+  const [tar,settar]=useState(null);
+  const abcd=(ev)=>{
+    setShowOverlay(!showoverlay);
+    settar(ev.target)
+  }
   const [editingUser, setEditingUser] = useState('');
 
   //Handle user group click
@@ -124,17 +147,23 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
   }, [allMessages]);
 
   useEffect(() => {
-    SignalRService.setEditProfileCallback((username, newNickname) => {
-      console.log("Last step we havepppppp",username,newNickname)
+    SignalRService.setEditProfileCallback((username, newNickname,userId) => {
+      console.log("Last step we havepppppp",username,newNickname,person)      
       setUserIds((userIds) => {
-        return userIds.map(user => {
-          if (user.username === username) {
-            return { ...user, nickname: newNickname };
-          }
-          return user;
-        });
+        const updatedUserIds = userIds.map(user => 
+          user.username === username ? { ...user, nickname: newNickname } : user
+        );
+        console.log("Updated userIds", updatedUserIds);
+        return updatedUserIds;
       });
-
+      console.log("OYYYYYYYYYYY",userIds,un);
+      setUN((x)=>{
+        return {...x,[userId]:newNickname}
+      })
+      showPerson((prevperson)=>{
+        return prevperson.username===username ? {...prevperson,nickname:newNickname} : prevperson;
+      })
+     
       //Api to update in database
       axios
         .get(`http://localhost:5290/Chat/EditProfile?username=${username}&newNickname=${newNickname}'`)
@@ -156,34 +185,38 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
       })
     })
 
-    SignalRService.setaddFriendToGroupMessageCallback( (groupName,frnd,matter) => {
-      SignalRService.addme(groupName)
+    SignalRService.setaddFriendToGroupMessageCallback( async(groupName,frnd,matter) => {
+      SignalRService.addme(groupName);
       console.log("At last for updating--",groupName,frnd,localStorage.getItem("username"))
-      var biod=axios.get(`http://localhost:5290/Chat/FullDetOfGroup?groupname=${groupName}`)
-      setFullDet((prev)=>{
-        const temp={...prev};
-        if(localStorage.getItem("username")===frnd){
-          return{...temp,[groupName]:biod.data}
-        }
-        return temp;
-      })
-      setAllGMessages( (allGMessages) =>{
-        const updatedMessages={...allGMessages};
-        if (!updatedMessages[groupName] && localStorage.getItem("username")===frnd) {
-          updatedMessages[groupName] = matter;
-        }
-        console.log('New updated one--',updatedMessages,matter,localStorage.getItem("username"))
-        return updatedMessages;
-      })
+      try {
+        var biod=await axios.get(`http://localhost:5290/Chat/FullDetOfGroup?groupname=${groupName}`)
+        setFullDet((prev)=>{
+          const temp={...prev};
+          if(localStorage.getItem("username")===frnd){
+            return{...temp,[groupName]:biod.data}
+          }
+          return temp;
+        })
+        console.log("We have content here bro--------",matter)
+        setAllGMessages( (allGMessages) =>{
+          const updatedMessages={...allGMessages};
+          if (!updatedMessages[groupName] && localStorage.getItem("username")===frnd) {
+            updatedMessages[groupName] = matter;
+          }
+          console.log('New updated one--',updatedMessages,matter,localStorage.getItem("username"))
+          return updatedMessages;
+        })
+      }
+      catch(error){
+        console.log("Error adding frnd at allchats 181")
+      }
     })
-  }, [allGMessages]);
+  }, [allGMessages,setUserIds,setAllGMessages]);
 
   
-  const handleNicknameSubmit = (nickname) => {
-    console.log("Received nickname:", username,nickname);
-    // Update the userIds state or make an API call to save the nickname
-    SignalRService.editProfile(username,nickname);
-    
+  const handleNicknameSubmit =(nickname) => {
+    console.log("Received nickname:", username,nickname,person);
+    SignalRService.editProfile(username,nickname,host);    
   };
 
 
@@ -218,7 +251,9 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
     }
   };
 
+  //When clicked On User Chat
   const showChat = (obj) => {
+    setActiveChatId(obj.id);
     setUser({ ...user, userType: "user" });
     console.log("Have------",user)
     const data = {
@@ -235,8 +270,18 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
     showPerson(obj);
   };
 
-  //Group CHat
+  function decryptmessage(encryptedMessage, userid) {
+    let decryptedMessage = '';
+    for (let i = 0; i < encryptedMessage.length; i++) {
+      let charCode = encryptedMessage.charCodeAt(i) ^ userid.charCodeAt(i % userid.length);
+      decryptedMessage += String.fromCharCode(charCode);
+    }
+    return decryptedMessage;
+}
+
+  //When clicked On Group Chat
   const groupChat=(gobj)=>{
+    setActiveChatId(gobj.name);
     setUser({ ...user, userType: "group" });
     console.log("Have------",user,gobj,fulldet)
     localStorage.setItem("gname",gobj.name)
@@ -269,19 +314,22 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
         const messagesOnLastDate = userMessages[lastDateKey];
 
         if (messagesOnLastDate && messagesOnLastDate.length > 0) {
+          console.log("Greater than 1111111111",messagesOnLastDate)
           if (messagesOnLastDate[messagesOnLastDate.length - 1].senderId === host) {
-            return "sent : " + messagesOnLastDate[messagesOnLastDate.length - 1].message;
+            return "sent : " + decryptmessage(messagesOnLastDate[messagesOnLastDate.length - 1].message,host);
+            //return "sent : " + messagesOnLastDate[messagesOnLastDate.length - 1].message;
           } else {
-            return "received : " + messagesOnLastDate[messagesOnLastDate.length - 1].message;
+            console.log("OH         pilot uu",messagesOnLastDate[messagesOnLastDate.length - 1],messagesOnLastDate[messagesOnLastDate.length - 1].message)
+            return "received : " + decryptmessage(messagesOnLastDate[messagesOnLastDate.length - 1].message,person.id);
+            //return "received : " + messagesOnLastDate[messagesOnLastDate.length - 1].message;
           }
         }
       }
     }
     return '';
   };
-
   
-  function addurfrnd(group){
+  async function addurfrnd(group){
     const frndname = prompt("Enter frnd name :");
     console.log('groupname:',group.name,'Friendname:',frndname);    
     const fdata={username:frndname,groupname:group.name}
@@ -292,13 +340,15 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
     //     console.log("In Getusersofgroup ",fdata.groupname,juser)
     // })
     setJmsgs(allGMessages[fdata.groupname])
-    axios
-      .post(`http://localhost:5290/Chat/AddUsersToGroup?groupname=${group.name}&frnd=${frndname}`)
-      .then((res) => {
-        console.log("Adding user to group",group.name,frndname);
-      })
-      .catch((err) => console.log(err));    
-    SignalRService.addFriend(group.name,frndname,allGMessages[group.name])
+    // axios
+    //   .post(`http://localhost:5290/Chat/AddUsersToGroup?groupname=${group.name}&frnd=${frndname}`)
+    //   .then((res) => {
+    //     console.log("Adding user to group",group.name,frndname);
+    //   })
+    //   .catch((err) => console.log(err));    
+    const response=await axios.get(`http://localhost:5290/Chat/FullDetOfGroup?groupname=${group.name}`)
+    const allusers=response.data.users;
+    SignalRService.addFriend(group.name,frndname,allGMessages[group.name],allusers)
   }
   
   function grandomid() {
@@ -390,12 +440,13 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
           />
         </div>
         <CgProfile
-          className="me-2 fs-4"
-          onClick={() => setShowModal(!showModal)}          
+          className="me-2 fs-4"          
+          onClick={abcd}   
           style={{ cursor: "pointer" }}
         />
       </div>
       <hr />
+      {/* Create Group Button */}
       <div className="button-container mt-auto">
         <div className="d-flex justify-content-between align-items-center m-3">
           <Button className="btn me-3" onClick={handleShowGroupModal}>
@@ -406,9 +457,17 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
           </Button> */}
         </div>
       </div>
+
       <p className="lead ms-2">Your Chats</p>
       <hr className="w-50 ms-1 m-0" />
+      {/* User online offline indicator */}
+      <style>
+        {`@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; }
+        }`}
+      </style>
+
       <div className="" style={{ position: "relative" }}>
+        {/* Display all users */}
         {userIds?.map(
           (obj) =>
             obj.id !== host && (
@@ -416,23 +475,44 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
                 <NavLink
                   onClick={() => showChat(obj)}
                   className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link"
+                  style={{position:"relative",...(activeChatId === obj.id ? activeChatStyle : inactiveChatStyle)}}
                 >
-                  <p className="lead ms-2 text-white fs-4 d-inline"> {obj.nickname} </p>
-                  <p className="lead ms-2 text-white fs-4 d-inline"> {obj.userStatus} </p>
-                  <p className="lead ms-2 text-white fs-4 d-inline"> {unseenMessages[obj.username]} </p>
-                  <p className="lead ms-2 text-white fs-6 d-inline ms-auto mt-5 mb-0">
-                    {getLastMessage(obj.username)}
-                  </p>
-                  <p className="lead ms-2 text-white fs-6 d-inline ms-auto mt-5 mb-0">
-                    {obj.username}
-                  </p>
+                  <p className="ms-2 text-white " style={{fontSize:"30px"}}> {obj.nickname} </p>
+                  {/* <p className="lead ms-2 text-white fs-4 d-inline"> {obj.userStatus} </p> 
+                    <p className="lead ms-2 text-white fs-4 d-inline"> {unseenMessages[obj.username]} </p>
+                  */}
+                  <div style={{width:"10px", height:"10px", borderRadius:"50%", marginLeft:"10px", 
+                    backgroundColor:obj.userStatus==="offline"?'red':'green', animation:obj.userStatus==='offline'?'blink 1s infinite':'none',display: 'inline-block',}}>
+                  </div>
+
+                  {unseenMessages[obj.username]>0 && (
+                    <div
+                      style={{width: '24px',height: '24px',backgroundColor: 'blue',color: 'white',textAlign: 'center',lineHeight: '10px',
+                      transform: 'rotate(45deg)',position: 'absolute',right: '10px',top: '50%',marginTop: '-12px',
+                      display: 'flex',alignItems: 'center',justifyContent: 'center',}}>
+                        <span style={{transform: 'rotate(-45deg)',display: 'block'}}>
+                          {unseenMessages[obj.username]}
+                        </span>                
+                    </div>
+                  )}
+                  
+                  <p className="ms-2 text-white d-inline ms-auto mt-5 mb-0" style={{ fontSize: "30px" }}>
+  {getLastMessage(obj.username)}
+</p>
+<p className="ms-2 text-white d-inline ms-auto mt-5 mb-0" style={{ fontSize: "30px" }}>
+  {obj.username}
+</p>
+
+
                 </NavLink>
                 <hr className="ms-1 w-75 m-0" />
               </React.Fragment>
             )
         )}
+
+        {/* Display all Groups */}
         {Object.entries(allGMessages)?.map(([groupName, group]) => (          
-          <div key={groupName} className="mt-3 d-flex justify-content-between align-items-center">
+          <div key={groupName} className="mt-3 d-flex justify-content-between align-items-center" style={activeChatId === groupName ? activeChatStyle : inactiveChatStyle}>
             <div>
               {console.log('Name and msgs are',groupName,group)}
               <NavLink onClick={()=> groupChat(fulldet[groupName]) } className="p-3 pb-0 d-flex w-100 text-start text-dark nav-link">
@@ -474,10 +554,10 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
         </Modal.Body>
       </Modal>
 
-      <EditProfile show={showModal} setShow={setShowModal} onSubmit={handleNicknameSubmit} />
-
-      
+      {showoverlay && <EditProfile showoverlay={showoverlay} tar={tar} setShowOverlay={setShowOverlay} onSubmit={handleNicknameSubmit} />}
     </div>
+      
+    
   );
 }
 

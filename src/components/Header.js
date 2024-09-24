@@ -55,7 +55,7 @@ function Header({ person, showPerson, setSearch ,grpperson,showGrpPerson}) {
       }
     });
 
-  }, [person.username, showPerson]);
+  }, [person.username,person.nickname, showPerson]);
 
   function getAMorPM() {
     let currentDate = new Date(person.lastSeen);
@@ -78,7 +78,7 @@ function Header({ person, showPerson, setSearch ,grpperson,showGrpPerson}) {
         <div className="ms-4 p-0">
           <span className="fs-5 p-0 m-0">
           {user.userType=="user"? 
-            <div>{person.username?.charAt(0).toUpperCase() +person.username?.slice(1)}<p>{userState}</p></div>
+            <div>{person.nickname?.charAt(0).toUpperCase() +person.nickname?.slice(1)}<p>{userState}</p></div>
             :
             <div>
               <img src={grpperson.picUrl} alt={`${grpperson.name}'s photo`} 

@@ -6,14 +6,15 @@ import { set } from "react-hook-form";
 
 function Conversation({ setShow, setMessage, person, showPerson, allMessages, setAllMessages,allGMessages,setAllGMessages
   ,un,setUN,freshgrp,setFreshGrp, grpperson, showGrpPerson,selectedGroup,
-  setSelectedGroup,allGro,setAllGro}) {
+  setSelectedGroup,allGro,setAllGro,profilenickname,setProfileNickName}) {
   const [search, setSearch] = useState("");
   const [prevMessages, setPrevMessages] = useState([]);
   const [replyObject , setReplyObject] = useState({});
   const [finalmsg,setFinalMsg]=useState([]);
   return (
     <>
-      <Header person={person} showPerson={showPerson} setSearch={setSearch} grpperson={grpperson} showGrpPerson={showGrpPerson} />
+      <Header person={person} showPerson={showPerson} setSearch={setSearch} grpperson={grpperson} showGrpPerson={showGrpPerson} 
+        profilenickname={profilenickname} setProfileNickName={setProfileNickName} />
       <Convo
         person={person}
         setShow={setShow}
@@ -39,6 +40,8 @@ function Conversation({ setShow, setMessage, person, showPerson, allMessages, se
         setFinalMsg={setFinalMsg}
         selectedGroup={selectedGroup}
         setSelectedGroup={setSelectedGroup}
+        profilenickname={profilenickname}
+        setProfileNickName={setProfileNickName}
 
       />
       <Footer person={person} grpperson={grpperson} prevMessages={prevMessages} setPrevMessages={setPrevMessages} allMessages={allMessages}
