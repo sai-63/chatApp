@@ -251,6 +251,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
 
   function decryptmessage(encryptedMessage, userid) {
     let decryptedMessage = '';
+    console.log("In cono we have dec assssss",encryptedMessage,userid)
     for (let i = 0; i < encryptedMessage.length; i++) {
         // XOR each character of the encrypted message with the corresponding character from the userid
         let charCode = encryptedMessage.charCodeAt(i) ^ userid.charCodeAt(i % userid.length);
@@ -613,7 +614,7 @@ function Convo({ person, setShow, setMessage, search, prevMessages, setPrevMessa
         {user.userType==="user" ? (          
           <div className="mt-auto">
           {Object.keys(allMessages[person.username]).length === 0 ? (
-              <p className="lead text-secondary m-auto">Chat is Empty</p>):
+              <div style={{display:'flex',justifyContent:'center',alignItems:'center',minHeight:'70vh'}}><p className="lead text-secondary m-auto">Chat is Empty</p></div>):
             (Object.keys(allMessages[person.username]).map((date) => (
               <div key={date}>
                 <div className="text-center my-3">

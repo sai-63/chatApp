@@ -1,5 +1,5 @@
 import axios, { all } from "axios";
-import React, { useEffect, useState,useContext} from "react";
+import React, { useEffect, useState,useContext, useId} from "react";
 import { AiFillCloseCircle, AiOutlineSearch } from "react-icons/ai";
 import { CgProfile } from "react-icons/cg";
 import { NavLink } from "react-router-dom";
@@ -8,6 +8,7 @@ import { UserContext } from './UserContext';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import {Button,Icons,Modal,Form}from 'react-bootstrap';
 import EditProfile from './EditProfile.js';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 function AllChats({ show, setShow, message, setMessage, person,showPerson,grpperson,showGrpPerson, userIds, setUserIds, allMessages, 
                   unseenMessages, setUnseenMessages ,allGMessages,setAllGMessages,allGro,setAllGro,fulldet,setFullDet
@@ -15,6 +16,9 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
   const [host, setHost] = useState("");  
   const [username, setUsername] = useState("");
   const [inputValue, setInputValue] = useState('');
+
+  const [showasonline, setShowOnline] = useState(false);
+  const [onlinefrndname,setOnlineFrndName]=useState('');
 
   //Selected Chat color
   const [activeChatId, setActiveChatId] = useState(null);
@@ -30,6 +34,16 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
     color: '#000', // Default text color for inactive chat
     padding: '10px',
   };
+
+  //Friend Online Notification
+  useEffect(() => {
+    if (showasonline) {
+      const timer = setTimeout(() => {
+        setShowOnline(false);  // Hide the toast after 2 seconds
+      }, 20000);
+      return () => clearTimeout(timer);  // Cleanup the timer when toast closes or component unmounts
+    }
+  }, [showasonline]);
 
   //Profile Nickname Updation
   const [showoverlay, setShowOverlay] = useState(false);
@@ -74,7 +88,9 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
           return user;
         });
         if (userFound) {
-          alert(`Your friend ${Username} is online`);
+          //alert(`Your friend ${Username} is online`);
+          setShowOnline(true);
+          setOnlineFrndName(Username);
         }
         return updatedUserIds;
       });
@@ -271,6 +287,7 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
   };
 
   function decryptmessage(encryptedMessage, userid) {
+    console.log('Errorrrrr Hereeeeeeeeeeeeeeee',encryptedMessage,userid)
     let decryptedMessage = '';
     for (let i = 0; i < encryptedMessage.length; i++) {
       let charCode = encryptedMessage.charCodeAt(i) ^ userid.charCodeAt(i % userid.length);
@@ -304,7 +321,7 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
     setMessage("");
   };
 
-  const getLastMessage = (username) => {
+  const getLastMessage = (username,id) => {
     const userMessages = allMessages[username];
     if (userMessages) {
       const dateKeys = Object.keys(userMessages).sort();
@@ -314,15 +331,15 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
         const messagesOnLastDate = userMessages[lastDateKey];
 
         if (messagesOnLastDate && messagesOnLastDate.length > 0) {
-          console.log("Greater than 1111111111",messagesOnLastDate)
           if (messagesOnLastDate[messagesOnLastDate.length - 1].senderId === host) {
             return "sent : " + decryptmessage(messagesOnLastDate[messagesOnLastDate.length - 1].message,host);
             //return "sent : " + messagesOnLastDate[messagesOnLastDate.length - 1].message;
           } else {
-            console.log("OH         pilot uu",messagesOnLastDate[messagesOnLastDate.length - 1],messagesOnLastDate[messagesOnLastDate.length - 1].message)
-            return "received : " + decryptmessage(messagesOnLastDate[messagesOnLastDate.length - 1].message,person.id);
+            return "received : " + decryptmessage(messagesOnLastDate[messagesOnLastDate.length - 1].message,id);
             //return "received : " + messagesOnLastDate[messagesOnLastDate.length - 1].message;
           }
+        }else{
+          console.log("Getlastmessages is less than 0 check it")
         }
       }
     }
@@ -497,12 +514,11 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
                   )}
                   
                   <p className="ms-2 text-white d-inline ms-auto mt-5 mb-0" style={{ fontSize: "30px" }}>
-  {getLastMessage(obj.username)}
-</p>
-<p className="ms-2 text-white d-inline ms-auto mt-5 mb-0" style={{ fontSize: "30px" }}>
-  {obj.username}
-</p>
-
+                    {getLastMessage(obj.username,obj.id)}
+                  </p>
+                  <p className="ms-2 text-white d-inline ms-auto mt-5 mb-0" style={{ fontSize: "30px" }}>
+                    {obj.username}
+                  </p>
 
                 </NavLink>
                 <hr className="ms-1 w-75 m-0" />
@@ -531,6 +547,19 @@ function AllChats({ show, setShow, message, setMessage, person,showPerson,grpper
         >
           <p className="lead ms-2"> {message} </p>
           <AiFillCloseCircle className="fs-4" onClick={handleShow} />
+        </div>
+      )}
+      
+      {/* Online friend Notification */}
+      {showasonline &&(
+        <div className={`toast position-fixed bottom-0 end-0 m-3 ${showasonline ? "show" : "hide"}`}role="alert" 
+          aria-live="assertive" aria-atomic="true" style={{ zIndex: 1 }}>
+            <div className="toast-header">        
+              <strong className="me-auto">Notification</strong>
+              <small>Just now</small>
+              <button type="button" className="btn-close" data-bs-dismiss="toast" aria-label="Close" onClick={() => setShowOnline(false)}></button>
+            </div>
+            <div className="toast-body" style={{color:'black'}}>{onlinefrndname} is online.</div>
         </div>
       )}
 

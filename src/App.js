@@ -6,6 +6,7 @@ import Home from "./components/Home";
 import Register from "./components/Register";
 import Chat from "./components/Chat";
 import ForgotPass from "./components/ForgotPass";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
   const router = createBrowserRouter([
